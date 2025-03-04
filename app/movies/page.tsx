@@ -18,14 +18,14 @@ function MovieCardSkeleton() {
 export default async function MoviesList({
   searchParams,
 }: {
-  // Use a plain object type for searchParams
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
-  // Extract search params using direct property access
-  const q = typeof searchParams.q === "string" ? searchParams.q : null;
+  // Await (resolve) the searchParams proxy before using it
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const q = typeof resolvedSearchParams.q === "string" ? resolvedSearchParams.q : null;
   const pageParam =
-    typeof searchParams.page === "string"
-      ? Math.max(1, parseInt(searchParams.page))
+    typeof resolvedSearchParams.page === "string"
+      ? Math.max(1, parseInt(resolvedSearchParams.page))
       : 1;
 
   // Fetch movie data from TMDB API

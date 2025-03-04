@@ -46,7 +46,7 @@ export default function MovieDetailsClient({ id }: { id: string }) {
       console.log("Fetching movie details for id:", id);
       const movieData = await getMovieDetails(id);
       console.log("Fetched movie data:", movieData);
-
+      
       if (!movieData) {
         // If no movie data is found, redirect back to /movies
         router.push("/movies");

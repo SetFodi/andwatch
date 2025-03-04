@@ -59,16 +59,31 @@ export const animeApi = {
   },
 };
 
-// Movie API (TMDB)
+
+
 export const movieApi = {
-  // Search movies
-  async searchMovies(query: string, page = 1) {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
-      { next: { revalidate: 3600 } } // Cache for 1 hour
-    );
-    return await response.json();
-  },
+    async getMovieById(id: string | number) {
+      const apiKey = 'bcea2ce0136ad9c471dd680822fdfdd6'; // Directly input your API key here for testing
+  
+      try {
+        const response = await fetch(
+          `${TMDB_BASE_URL}/movie/${id}?api_key=${apiKey}&append_to_response=credits,similar,videos`,
+          { next: { revalidate: 86400 } }
+        );
+    
+        if (!response.ok) {
+          throw new Error(`Failed to fetch movie details: ${response.statusText}`);
+        }
+  
+        return await response.json();
+      } catch (error) {
+        console.error("Error fetching movie details:", error);
+        return null; // Return null if an error occurs
+      }
+    },
+    
+  
+  
   
   // Get popular movies
   async getPopularMovies(page = 1) {
@@ -88,14 +103,8 @@ export const movieApi = {
     return await response.json();
   },
   
-  // Get movie by ID
-  async getMovieById(id: string | number) {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}&append_to_response=credits,similar,videos`,
-      { next: { revalidate: 86400 } } // Cache for 1 day
-    );
-    return await response.json();
-  },
+
+
   
   // Get movies by genre
   async getMoviesByGenre(genreId: number, page = 1) {
