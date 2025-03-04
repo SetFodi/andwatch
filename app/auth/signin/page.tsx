@@ -12,12 +12,10 @@ export default function SignIn() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Check for success message from registration
   useEffect(() => {
     if (searchParams?.get("registered") === "true") {
       setSuccess("Account created successfully! Please sign in.");
     }
-    
     if (searchParams?.get("error") === "CredentialsSignin") {
       setError("Invalid email or password");
     }
@@ -29,11 +27,15 @@ export default function SignIn() {
     setLoading(true);
 
     const form = new FormData(e.currentTarget);
+    const email = (form.get("email") as string).trim().toLowerCase();
+    const password = (form.get("password") as string).trim();
     
+    console.log("Signin attempt:", { email, password }); // Log input
+
     try {
       const res = await signIn("credentials", {
-        email: form.get("email") as string,
-        password: form.get("password") as string,
+        email,
+        password,
         redirect: false,
       });
 

@@ -1,4 +1,3 @@
-// app/anime/[id]/page.tsx
 import Image from "next/image";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
@@ -30,7 +29,7 @@ async function getUserWatchItem(userId: string, animeId: string) {
     if (!user) return null;
     
     return user.watchlist.find(
-      item => item.externalId === animeId && item.mediaType === 'anime'
+      (item: any) => item.externalId === animeId && item.mediaType === "anime"
     );
   } catch (error) {
     console.error("Error fetching user watch status:", error);
@@ -56,7 +55,7 @@ export default async function AnimeDetailsPage({ params }: { params: { id: strin
   const startDate = anime.aired?.from ? new Date(anime.aired.from).toLocaleDateString() : "?";
   const endDate = anime.aired?.to ? new Date(anime.aired.to).toLocaleDateString() : 
                   (anime.status === "Currently Airing" ? "Present" : "?");
-  
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex flex-col md:flex-row gap-8">
@@ -77,66 +76,9 @@ export default async function AnimeDetailsPage({ params }: { params: { id: strin
                   No Image Available
                 </div>
               )}
-          
-          {/* Related anime */}
-          {anime.relations && anime.relations.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-xl font-semibold mb-3">Related Anime</h3>
-              <div className="bg-gray-800 rounded-lg p-4">
-                <ul className="space-y-2">
-                  {anime.relations.map((relation: any, index: number) => (
-                    <li key={index}>
-                      <div className="font-medium text-gray-300">{relation.relation}:</div>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {relation.entry.map((entry: any) => (
-                          entry.type === "anime" ? (
-                            <Link 
-                              key={entry.mal_id} 
-                              href={`/anime/${entry.mal_id}`}
-                              className="text-blue-400 hover:underline"
-                            >
-                              {entry.name}
-                            </Link>
-                          ) : (
-                            <span key={entry.mal_id} className="text-gray-400">
-                              {entry.name}
-                            </span>
-                          )
-                        ))}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
-          )}
-          
-          {/* User reviews section - this would be connected to your own database */}
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-xl font-semibold">User Reviews</h3>
-              {session && (
-                <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md text-sm transition">
-                  Write a Review
-                </button>
-              )}
-            </div>
-            <div className="bg-gray-800 rounded-lg p-6 text-center">
-              <p className="text-gray-400">No reviews yet. Be the first to share your thoughts!</p>
-              {!session && (
-                <Link href="/auth/signin" className="block mt-4 text-blue-400 hover:underline">
-                  Sign in to write a review
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-            </div>
-            
+            {/* Closing div for aspect-[3/4] moved inside the conditional block */}
+
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold mb-2">Information</h3>
@@ -161,7 +103,7 @@ export default async function AnimeDetailsPage({ params }: { params: { id: strin
                   <span className="text-gray-400">Studios:</span>
                   <span className="col-span-2">
                     {anime.studios && anime.studios.length > 0 
-                      ? anime.studios.map(s => s.name).join(", ") 
+                      ? anime.studios.map((s: any) => s.name).join(", ") 
                       : "Unknown"}
                   </span>
                   
@@ -196,6 +138,59 @@ export default async function AnimeDetailsPage({ params }: { params: { id: strin
               )}
             </div>
           </div>
+
+          {/* Related anime */}
+          {anime.relations && anime.relations.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold mb-3">Related Anime</h3>
+              <div className="bg-gray-800 rounded-lg p-4">
+                <ul className="space-y-2">
+                  {anime.relations.map((relation: any, index: number) => (
+                    <li key={index}>
+                      <div className="font-medium text-gray-300">{relation.relation}:</div>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {relation.entry.map((entry: any) => (
+                          entry.type === "anime" ? (
+                            <Link 
+                              key={entry.mal_id} 
+                              href={`/anime/${entry.mal_id}`}
+                              className="text-blue-400 hover:underline"
+                            >
+                              {entry.name}
+                            </Link>
+                          ) : (
+                            <span key={entry.mal_id} className="text-gray-400">
+                              {entry.name}
+                            </span>
+                          )
+                        ))}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+          
+          {/* User reviews section */}
+          <div className="mt-8">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-semibold">User Reviews</h3>
+              {session && (
+                <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md text-sm transition">
+                  Write a Review
+                </button>
+              )}
+            </div>
+            <div className="bg-gray-800 rounded-lg p-6 text-center">
+              <p className="text-gray-400">No reviews yet. Be the first to share your thoughts!</p>
+              {!session && (
+                <Link href="/auth/signin" className="block mt-4 text-blue-400 hover:underline">
+                  Sign in to write a review
+                </Link>
+              )}
+            </div>
+          </div>
         </div>
         
         {/* Right column - Details */}
@@ -224,15 +219,16 @@ export default async function AnimeDetailsPage({ params }: { params: { id: strin
           </div>
           
           <div className="flex flex-wrap gap-2 mb-6">
-            {anime.genres && anime.genres.map((genre: any) => (
-              <Link 
-                key={genre.mal_id} 
-                href={`/anime?genre=${genre.mal_id}`}
-                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md text-sm transition"
-              >
-                {genre.name}
-              </Link>
-            ))}
+            {anime.genres &&
+              anime.genres.map((genre: any) => (
+                <Link 
+                  key={genre.mal_id} 
+                  href={`/anime?genre=${genre.mal_id}`}
+                  className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md text-sm transition"
+                >
+                  {genre.name}
+                </Link>
+              ))}
           </div>
           
           <div className="mb-8">

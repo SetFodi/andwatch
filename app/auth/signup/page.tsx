@@ -15,9 +15,11 @@ export default function SignUp() {
     setLoading(true);
 
     const form = new FormData(e.currentTarget);
-    const email = form.get("email") as string;
-    const password = form.get("password") as string;
-    const confirmPassword = form.get("confirmPassword") as string;
+    const email = (form.get("email") as string).trim().toLowerCase();
+    const password = (form.get("password") as string).trim();
+    const confirmPassword = (form.get("confirmPassword") as string).trim();
+
+    console.log("Signup attempt:", { email, password, confirmPassword }); // Log input
 
     if (password !== confirmPassword) {
       setError("Passwords don't match");
@@ -40,7 +42,6 @@ export default function SignUp() {
         throw new Error(data.error || "Something went wrong");
       }
 
-      // Redirect to sign in page
       router.push("/auth/signin?registered=true");
     } catch (err: any) {
       setError(err.message);

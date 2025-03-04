@@ -1,14 +1,11 @@
-// app/api/auth/signup/route.ts
 import { NextResponse } from "next/server";
 import connectDB from "../../../../lib/db";
 import { User } from "../../../../lib/models/User";
-import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
-    // Basic validation
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email and password are required" },
@@ -25,8 +22,8 @@ export async function POST(req: Request) {
 
     await connectDB();
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase();
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return NextResponse.json(
         { error: "Email is already registered" },
@@ -34,12 +31,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create new user
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Log the raw password for debugging (remove in production)
+    console.log("Signup - Raw Password:", password);
+
+    // Pass the raw password to the User model so its pre-save hook can hash it.
     const newUser = new User({
-      email,
-      password: hashedPassword,
-      name: email.split('@')[0], // Default name from email
+      email: normalizedEmail,
+      password: password, // raw password
+      name: normalizedEmail.split('@')[0],
     });
 
     await newUser.save();

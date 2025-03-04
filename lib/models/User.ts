@@ -1,66 +1,6 @@
-// lib/models/User.ts
 import mongoose, { Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-// Define the schema for user watch items (anime/movies)
-const UserWatchItemSchema = new Schema({
-  // External API id (from Jikan or TMDB)
-  externalId: {
-    type: String,
-    required: true
-  },
-  // Type of media (anime or movie)
-  mediaType: {
-    type: String,
-    enum: ['anime', 'movie'],
-    required: true
-  },
-  // User's personal rating out of 10
-  userRating: {
-    type: Number,
-    min: 0,
-    max: 10,
-    default: null
-  },
-  // User's status for this item
-  status: {
-    type: String,
-    enum: ['watching', 'completed', 'on-hold', 'dropped', 'plan_to_watch'],
-    default: 'plan_to_watch'
-  },
-  // Progress tracking (current episode for anime, watched flag for movies)
-  progress: {
-    type: Number,
-    default: 0
-  },
-  // User notes/review
-  notes: {
-    type: String,
-    default: ''
-  },
-  // Start date (when the user started watching)
-  startDate: {
-    type: Date,
-    default: null
-  },
-  // End date (when the user finished watching)
-  endDate: {
-    type: Date,
-    default: null
-  },
-  // Date added to the user's list
-  addedAt: {
-    type: Date,
-    default: Date.now
-  },
-  // Last updated
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-// User schema
 const UserSchema = new Schema({
   email: {
     type: String,
@@ -92,9 +32,7 @@ const UserSchema = new Schema({
     type: String,
     default: "",
   },
-  // User's watchlist
-  watchlist: [UserWatchItemSchema],
-  // User's favorite anime and movies
+  watchlist: [/* ... UserWatchItemSchema definitions ... */],
   favorites: {
     anime: [{
       externalId: String,
@@ -107,7 +45,6 @@ const UserSchema = new Schema({
       image: String
     }]
   },
-  // User settings
   settings: {
     theme: {
       type: String,
@@ -129,7 +66,7 @@ const UserSchema = new Schema({
   }
 });
 
-// Hash password before saving
+// Pre-save hook to hash the password
 UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
@@ -140,9 +77,8 @@ UserSchema.pre('save', async function(next) {
     
     // Set username if not provided
     if (!this.username && this.email) {
-      // Create a base username from email
       const baseUsername = this.email.split('@')[0];
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       this.username = `${baseUsername}${randomSuffix}`;
     }
     
@@ -157,10 +93,9 @@ UserSchema.pre('save', async function(next) {
   }
 });
 
-// Method to compare password
+// Method to compare passwords (if needed)
 UserSchema.methods.comparePassword = async function(candidatePassword: string) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Create the model, reusing it if it already exists
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
