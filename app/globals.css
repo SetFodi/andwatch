@@ -1,17 +1,24 @@
 @import "tailwindcss";
-
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Fira+Code&display=swap');
+/* Custom CSS Variables */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --gray-900: #1a1a1a;
+  --gray-800: #2d2d2d;
+  --gray-700: #404040;
+  --gray-600: #595959;
+  --gray-500: #737373;
+  --gray-400: #a3a3a3;
+  --indigo-600: #4f46e5;
+  --indigo-500: #6366f1;
+  --indigo-400: #818cf8;
+  --indigo-300: #a5b4fc;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --font-mono: "Fira Code", "Courier New", monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Dark Mode */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -19,8 +26,61 @@
   }
 }
 
+/* Base Styles */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Subtle Gradient Background */
+html {
+  background: linear-gradient(to bottom, var(--background), var(--gray-900));
+  min-height: 100vh;
+}
+
+/* Custom Utility Classes */
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(to right, var(--foreground), var(--indigo-400));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Reset */
+* {
+  box-sizing: border-box;
+}
+
+/* Links */
+a {
+  color: var(--indigo-500);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--indigo-400);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 300;
+  line-height: 1.2;
+  margin-bottom: 0.5em;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }

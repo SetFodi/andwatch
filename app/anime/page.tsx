@@ -1,48 +1,14 @@
-// app/anime/page.jsx (or page.tsx)
 import Link from "next/link";
 import Image from "next/image";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../api/auth/[...nextauth]/route";
 import { animeApi } from "../../lib/services/api";
 
-// Enhanced skeleton loader with shimmer effect
-function AnimeCardSkeleton() {
-  return (
-    <div className="rounded-2xl overflow-hidden bg-gray-800/40 border border-gray-700/50 h-full flex flex-col animate-pulse">
-      <div className="relative h-60 bg-gray-700/50"></div>
-      <div className="p-4 flex-grow flex flex-col space-y-3">
-        <div className="h-6 bg-gray-700/50 rounded-full w-3/4" />
-        <div className="h-4 bg-gray-700/50 rounded-full w-full" />
-        <div className="h-4 bg-gray-700/50 rounded-full w-5/6" />
-      </div>
-    </div>
-  );
-}
-
-const animeGenres = [
-  { id: 1, name: "Action", color: "from-red-500/80 to-orange-500/80" },
-  { id: 2, name: "Adventure", color: "from-emerald-500/80 to-cyan-500/80" },
-  { id: 4, name: "Comedy", color: "from-amber-500/80 to-yellow-500/80" },
-  { id: 8, name: "Drama", color: "from-purple-500/80 to-fuchsia-500/80" },
-  { id: 10, name: "Fantasy", color: "from-blue-500/80 to-indigo-500/80" },
-  { id: 14, name: "Horror", color: "from-gray-700/80 to-slate-800/80" },
-  { id: 7, name: "Mystery", color: "from-indigo-600/80 to-violet-600/80" },
-  { id: 22, name: "Romance", color: "from-pink-500/80 to-rose-500/80" },
-  { id: 24, name: "Sci-Fi", color: "from-cyan-500/80 to-sky-500/80" },
-  { id: 36, name: "Slice of Life", color: "from-teal-500/80 to-emerald-500/80" },
-  { id: 30, name: "Sports", color: "from-orange-500/80 to-amber-500/80" },
-  { id: 37, name: "Supernatural", color: "from-violet-600/80 to-purple-600/80" },
-];
-
 export default async function AnimeList({ searchParams }) {
-  // Parse search parameters
   const genre = searchParams?.genre || null;
   const genreId = genre ? parseInt(genre, 10) : null;
   const q = searchParams?.q || null;
   const pageParam = searchParams?.page || "1";
   const page = parseInt(pageParam, 10) || 1;
 
-  // Fetch anime data
   let animeData;
   try {
     if (q) {
@@ -67,186 +33,150 @@ export default async function AnimeList({ searchParams }) {
     has_next_page: false,
   };
 
-  const selectedGenre = genreId ? animeGenres.find(g => g.id === genreId) : null;
+  const commonGenres = [
+    { id: 1, name: "Action" },
+    { id: 2, name: "Adventure" },
+    { id: 4, name: "Comedy" },
+    { id: 8, name: "Drama" },
+    { id: 10, name: "Fantasy" },
+    { id: 22, name: "Romance" },
+    { id: 24, name: "Sci-Fi" }
+  ];
+
   const pageTitle = q
     ? `Search: ${q}`
     : genreId
-    ? `${selectedGenre?.name || "Genre"} Anime`
-    : "Discover Anime";
-
-  // Helper function to get genre color
-  function getGenreColor(genreId) {
-    return animeGenres.find(g => g.id === genreId)?.color || "from-indigo-500/80 to-blue-500/80";
-  }
+    ? `${commonGenres.find(g => g.id === genreId)?.name || "Genre"} Anime`
+    : "Discover";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-indigo-950/50">
-      <div className="p-6 max-w-7xl mx-auto">
-        {/* Hero Section */}
-        <div className={`mb-8 p-8 rounded-3xl shadow-2xl overflow-hidden relative
-                      bg-gradient-to-tr ${selectedGenre?.color || "from-indigo-600/30 to-blue-600/30"}
-                      border border-gray-700/30`}>
-          <div className="relative z-10">
-            <h1 className="text-4xl font-bold text-white">
-              {pageTitle}
-            </h1>
-            <p className="text-lg text-gray-300 max-w-2xl mt-2">
-              {q
-                ? `Results for "${q}"`
-                : genreId
-                ? `Curated collection of ${selectedGenre?.name || ""} anime`
-                : "Explore premium anime selections handpicked for you"}
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+        {/* Enhanced Header */}
+        <div className="mb-12 animate-fade-in">
+          <h1 className="text-5xl font-extralight tracking-wide mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+            {pageTitle}
+          </h1>
+          <div className="h-px w-20 bg-gradient-to-r from-transparent via-white to-transparent mb-8"></div>
 
-        {/* Filter Section */}
-        <div className="bg-gray-800/20 rounded-2xl p-6 mb-8 border border-gray-700/20">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <form className="flex-1 w-full">
-              <div className="relative">
-                <input
-                  type="text"
-                  name="q"
-                  placeholder="Search anime..."
-                  defaultValue={q || ""}
-                  className="w-full bg-gray-900/30 text-white rounded-xl px-5 py-3 pl-12 
-                          border border-gray-700/50"
-                />
-                <svg
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <div className="flex flex-col md:flex-row md:items-center gap-8">
+            {/* Enhanced Search Box */}
+            <form className="w-full md:w-96 relative group">
+              <input
+                type="text"
+                name="q"
+                placeholder="Search anime..."
+                defaultValue={q || ""}
+                className="w-full bg-gray-950/80 border border-gray-800/50 py-3 pl-5 pr-12 rounded-full focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300 placeholder-gray-600"
+              />
+              <button type="submit" className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-70 group-hover:opacity-100 transition-opacity">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-              </div>
+              </button>
             </form>
-            
-            <div className="w-full md:w-auto">
-              <div className="flex flex-wrap gap-2 justify-center">
+
+            {/* Enhanced Genre Filter */}
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/anime"
+                className={`px-5 py-2 text-sm rounded-full transition-all duration-300 ${!genreId ? "bg-indigo-600 text-white shadow-lg" : "bg-gray-900/50 border border-gray-800 text-gray-300 hover:bg-gray-800 hover:border-indigo-500"}`}
+              >
+                All
+              </Link>
+              {commonGenres.map((genre) => (
                 <Link
-                  href="/anime"
-                  className={`px-4 py-2 rounded-xl text-sm
-                          ${!genreId 
-                            ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white" 
-                            : "bg-gray-700/30 text-gray-300 border border-gray-700/30"}`}
+                  key={genre.id}
+                  href={`/anime?genre=${genre.id}`}
+                  className={`px-5 py-2 text-sm rounded-full transition-all duration-300 ${genreId === genre.id ? "bg-indigo-600 text-white shadow-lg" : "bg-gray-900/50 border border-gray-800 text-gray-300 hover:bg-gray-800 hover:border-indigo-500"}`}
                 >
-                  All Genres
+                  {genre.name}
                 </Link>
-                {animeGenres.slice(0, 8).map((genre) => (
-                  <Link
-                    key={genre.id}
-                    href={`/anime?genre=${genre.id}`}
-                    className={`px-4 py-2 rounded-xl text-sm
-                            ${genreId === genre.id 
-                              ? `bg-gradient-to-r ${genre.color} text-white` 
-                              : "bg-gray-700/30 text-gray-300 border border-gray-700/30"}`}
-                  >
-                    {genre.name}
-                  </Link>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Anime Grid */}
+        {/* Enhanced Grid */}
         {animeList.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {animeList.map((anime) => {
-                const primaryGenreId = anime.genres && anime.genres[0] ? anime.genres[0].mal_id : null;
-                const primaryGenreColor = primaryGenreId ? getGenreColor(primaryGenreId) : "from-indigo-500/80 to-blue-500/80";
-                
-                return (
-                  <Link href={`/anime/${anime.mal_id}`} key={anime.mal_id}>
-                    <div className="rounded-2xl overflow-hidden bg-gray-800/30
-                                  border border-gray-700/30 hover:border-indigo-500/50
-                                  h-full flex flex-col hover:shadow-xl">
-                      <div className="relative h-60 overflow-hidden">
-                        {anime.images?.jpg?.image_url && (
-                          <>
-                            <Image
-                              src={anime.images.jpg.image_url}
-                              alt={anime.title || "Anime"}
-                              width={400}
-                              height={600}
-                              className="object-cover w-full h-full"
-                            />
-                            <div className={`absolute inset-0 bg-gradient-to-t ${primaryGenreColor} opacity-30`} />
-                          </>
-                        )}
-                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80">
-                          <h3 className="text-white text-lg font-semibold line-clamp-1">
-                            {anime.title}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-2">
-                            {anime.score && (
-                              <div className="flex items-center text-sm text-amber-400">
-                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg>
-                                {anime.score.toFixed(1)}
-                              </div>
-                            )}
-                            <span className="text-xs text-gray-300 bg-gray-700/30 px-2 py-1 rounded-lg">
-                              {anime.type || 'TV'}
-                            </span>
-                          </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 animate-fade-in-up">
+              {animeList.map((anime) => (
+                <Link href={`/anime/${anime.mal_id}`} key={anime.mal_id} className="group">
+                  <div className="flex flex-col h-full transition-transform duration-500 hover:-translate-y-2">
+                    <div className="aspect-[3/4] relative overflow-hidden rounded-lg shadow-lg bg-gray-900">
+                      {anime.images?.jpg?.image_url ? (
+                        <Image
+                          src={anime.images.jpg.image_url}
+                          alt={anime.title || "Anime"}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                          className="object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-110"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-600 bg-gray-800">
+                          No Image
                         </div>
-                      </div>
-                      
-                      <div className="p-4 flex-grow">
-                        <p className="text-gray-300 text-sm line-clamp-3">
-                          {anime.synopsis || 'No synopsis available'}
-                        </p>
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {anime.genres?.slice(0, 2).map((genre) => (
-                            <span key={genre.mal_id} className="text-xs text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-lg">
-                              {genre.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+                      )}
                     </div>
-                  </Link>
-                );
-              })}
+                    <h3 className="text-sm font-medium mt-4 mb-1 line-clamp-1 transition-colors duration-300 group-hover:text-indigo-400">
+                      {anime.title}
+                    </h3>
+                    <div className="flex items-center text-xs text-gray-400 space-x-2">
+                      <span>{anime.type || 'TV'}</span>
+                      <span>•</span>
+                      <span>{anime.year || '--'}</span>
+                      {anime.score && (
+                        <>
+                          <span>•</span>
+                          <span className="text-indigo-300">{anime.score.toFixed(1)}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
 
-            {/* Pagination */}
-            <div className="mt-8 flex justify-center">
-              <div className="flex gap-2">
+            {/* Enhanced Pagination */}
+            <div className="mt-16 flex justify-center">
+              <div className="flex items-center space-x-8 bg-gray-900/50 py-3 px-6 rounded-full shadow-lg">
                 {pagination.current_page > 1 && (
                   <Link
                     href={`/anime?page=${pagination.current_page - 1}${q ? `&q=${q}` : ''}${genreId ? `&genre=${genreId}` : ''}`}
-                    className="px-4 py-2 bg-gray-800/30 text-gray-300 rounded-lg border border-gray-700/30"
+                    className="text-sm text-gray-300 hover:text-indigo-400 flex items-center transition-colors duration-300"
                   >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+                    </svg>
                     Previous
                   </Link>
                 )}
-                <div className="px-4 py-2 bg-gray-800/30 text-gray-300 rounded-lg border border-gray-700/30">
-                  Page {pagination.current_page}
-                </div>
+                <span className="text-sm text-gray-400">
+                  Page {pagination.current_page} of {pagination.last_visible_page}
+                </span>
                 {pagination.has_next_page && (
                   <Link
                     href={`/anime?page=${pagination.current_page + 1}${q ? `&q=${q}` : ''}${genreId ? `&genre=${genreId}` : ''}`}
-                    className="px-4 py-2 bg-gray-800/30 text-gray-300 rounded-lg border border-gray-700/30"
+                    className="text-sm text-gray-300 hover:text-indigo-400 flex items-center transition-colors duration-300"
                   >
                     Next
+                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                    </svg>
                   </Link>
                 )}
               </div>
             </div>
           </>
         ) : (
-          <div className="text-center p-12">
-            <div className="text-6xl text-gray-500/50">🎌</div>
-            <h3 className="text-2xl font-light text-gray-300 mt-4">No matches found</h3>
-            <p className="text-gray-500 max-w-md mx-auto mt-2">
-              Try adjusting your search filters or explore our trending anime selections
+          <div className="py-20 text-center animate-fade-in">
+            <svg className="w-20 h-20 mx-auto text-gray-600 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="text-2xl font-light mb-3 text-gray-200">No results found</h3>
+            <p className="text-gray-500 max-w-md mx-auto">
+              Try adjusting your search or explore other categories
             </p>
           </div>
         )}
