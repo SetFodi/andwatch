@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -8,11 +8,15 @@ import Image from "next/image";
 export default function EditProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [userData, setUserData] = useState({
     displayName: "",
     avatar: "",
     bio: "",
   });
+  const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -35,17 +39,41 @@ export default function EditProfilePage() {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
+      
       if (!response.ok) throw new Error("Failed to fetch user data");
+      
       const data = await response.json();
       setUserData({
         displayName: data.displayName || "",
         avatar: data.avatar || "",
         bio: data.bio || "",
       });
+      
+      if (data.avatar) {
+        setPreviewAvatar(`${process.env.NEXT_PUBLIC_BASE_URL}${data.avatar}`);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewAvatar(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      console.log("Selected file:", file.name, file.size, file.type);
+    } else {
+      console.log("No file selected");
     }
   };
 
@@ -59,15 +87,41 @@ export default function EditProfilePage() {
       return;
     }
 
+    const formData = new FormData();
+    formData.append("displayName", userData.displayName);
+    formData.append("bio", userData.bio);
+    
+    // Only append the file if one was selected
+    if (selectedFile) {
+      formData.append("avatar", selectedFile);
+      console.log("Appending file to FormData:", selectedFile.name);
+    }
+
     try {
+      // Log formData to confirm contents (for debugging)
+      console.log("FormData entries:", [...formData.entries()].map(([key]) => key));
+      
       const response = await fetch(`/api/user/${session.user.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userData),
+        body: formData,
+        // Don't set Content-Type header, the browser will set it with the boundary
       });
-      if (!response.ok) throw new Error("Failed to update profile");
-      setSuccess("Profile updated successfully!");
-      setTimeout(() => router.push("/profile"), 2000); // Redirect after 2 seconds
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.error || "Failed to update profile");
+      }
+      
+      setSuccess(responseData.message || "Profile updated successfully!");
+      
+      // If we got a new avatar path, update it
+      if (responseData.avatar) {
+        setUserData(prev => ({ ...prev, avatar: responseData.avatar }));
+      }
+      
+      // Navigate back to profile after a short delay
+      setTimeout(() => router.push("/profile"), 2000);
     } catch (err: any) {
       setError(err.message);
     }
@@ -103,23 +157,25 @@ export default function EditProfilePage() {
 
           <div>
             <label htmlFor="avatar" className="block text-sm font-medium text-gray-300">
-              Avatar URL
+              Profile Picture
             </label>
             <input
-              type="text"
+              type="file"
               id="avatar"
-              value={userData.avatar}
-              onChange={(e) => setUserData({ ...userData, avatar: e.target.value })}
-              className="mt-1 block w-full bg-gray-800/50 border border-gray-700/50 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Enter image URL (e.g., https://example.com/avatar.jpg)"
+              name="avatar"
+              accept="image/*"
+              onChange={handleFileChange}
+              ref={fileInputRef}
+              className="mt-1 block w-full bg-gray-800/50 border border-gray-700/50 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            {userData.avatar && (
+            {previewAvatar && (
               <div className="mt-2 relative w-24 h-24">
                 <Image
-                  src={userData.avatar}
+                  src={previewAvatar}
                   alt="Avatar Preview"
                   fill
                   className="object-cover rounded-full"
+                  onError={(e) => console.error("Image load error:", e)}
                 />
               </div>
             )}

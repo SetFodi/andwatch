@@ -1,5 +1,7 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+// next.config.ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
@@ -12,8 +14,14 @@ const nextConfig = {
         hostname: "image.tmdb.org",
         pathname: "/t/p/**",
       },
+      {
+        protocol: "http", // For local dev
+        hostname: "localhost", // Your development hostname
+        port: "3000", // The port your app runs on
+        pathname: "/uploads/**",
+      },
     ],
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

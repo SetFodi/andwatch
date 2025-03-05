@@ -1,6 +1,6 @@
 // lib/models/User.ts
-import mongoose, { Schema } from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose, { Schema } from "mongoose";
+import bcrypt from "bcryptjs";
 
 const UserSchema = new Schema({
   email: {
@@ -27,7 +27,7 @@ const UserSchema = new Schema({
   },
   avatar: {
     type: String,
-    default: "",
+    default: "", // Will store the file path (e.g., "uploads/avatar_<userId>.jpg")
   },
   bio: {
     type: String,
@@ -35,68 +35,72 @@ const UserSchema = new Schema({
   },
   watchlist: [/* ... UserWatchItemSchema definitions ... */],
   favorites: {
-    anime: [{
-      externalId: String,
-      title: String,
-      image: String
-    }],
-    movies: [{
-      externalId: String,
-      title: String,
-      image: String
-    }]
+    anime: [
+      {
+        externalId: String,
+        title: String,
+        image: String,
+      },
+    ],
+    movies: [
+      {
+        externalId: String,
+        title: String,
+        image: String,
+      },
+    ],
   },
   settings: {
     theme: {
       type: String,
-      enum: ['light', 'dark', 'system'],
-      default: 'system'
+      enum: ["light", "dark", "system"],
+      default: "system",
     },
     private: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 // Pre-save hook to hash the password
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
+UserSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     this.updatedAt = new Date();
-    
+
     // Set username if not provided
     if (!this.username && this.email) {
-      const baseUsername = this.email.split('@')[0];
+      const baseUsername = this.email.split("@")[0];
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       this.username = `${baseUsername}${randomSuffix}`;
     }
-    
+
     // Set displayName to username if not provided
     if (!this.displayName && this.username) {
       this.displayName = this.username;
     }
-    
+
     next();
   } catch (error: any) {
     next(error);
   }
 });
 
-// Method to compare passwords (if needed)
-UserSchema.methods.comparePassword = async function(candidatePassword: string) {
+// Method to compare passwords
+UserSchema.methods.comparePassword = async function (candidatePassword: string) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-export const User = mongoose.models.User || mongoose.model('User', UserSchema);
+export const User = mongoose.models.User || mongoose.model("User", UserSchema);
