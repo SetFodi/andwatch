@@ -54,7 +54,7 @@ export default async function Profile() {
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    redirect("/sign-in"); // Adjusted to match typical Next.js auth routes
+    redirect("/sign-in");
   }
 
   await connectDB();
@@ -64,8 +64,13 @@ export default async function Profile() {
   if (!userDoc) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-950 to-black p-8">
-        <div className="max-w-6xl mx-auto bg-gradient-to-r from-red-900/20 to-red-800/20 border border-red-700/50 p-6 rounded-2xl shadow-lg">
-          <p className="text-red-300 text-lg">User data not found. Please try signing in again.</p>
+        <div className="max-w-6xl mx-auto bg-gradient-to-br from-red-900/20 via-red-800/20 to-red-950/30 border border-red-700/30 p-8 rounded-2xl shadow-xl backdrop-blur-sm">
+          <div className="flex items-center space-x-4 text-red-300">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p className="text-lg font-medium">User data not found. Please try signing in again.</p>
+          </div>
         </div>
       </div>
     );
@@ -118,7 +123,7 @@ export default async function Profile() {
   const totalCompleted = completedAnime.length + completedMovies.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black p-6 md:p-12 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black p-4 md:p-8 lg:p-12 text-white">
       <div className="max-w-7xl mx-auto">
         <ProfileHeader
           user={user}
@@ -126,7 +131,7 @@ export default async function Profile() {
           totalPlanning={totalPlanning}
           totalCompleted={totalCompleted}
         />
-        <main className="mt-12">
+        <main className="mt-10">
           <CategorySectionClient
             watching={watchingItems}
             planning={planningItems}

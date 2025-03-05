@@ -3,13 +3,16 @@
 
 /* Custom CSS Variables */
 :root {
-  --background: #0f172a; /* Deeper navy blue for better contrast */
-  --foreground: #f1f5f9; /* Light gray for text */
+  --background: #0f172a; /* Deeper navy blue base */
+  --foreground: #f1f5f9; /* Light gray for primary text */
   --gray-900: #1e293b; /* Darker gray for gradients */
-  --gray-800: #334155; /* Medium gray for cards */
+  --gray-800: #334155; /* Medium gray for cards and inactive states */
   --gray-700: #475569; /* Subtle gray for borders */
   --gray-600: #64748b; /* Gray for secondary text */
-  --gray-500: #94a3b8; /* Light gray for accents */
+  --gray-500: #94a3b8; /* Light gray for accents and secondary text */
+  --gray-400: #cbd5e1; /* Lighter gray for text on dark buttons */
+  --gray-300: #d1d5db; /* Very light gray for text */
+  --indigo-700: #4338ca; /* Brighter indigo for active states */
   --indigo-600: #4c51bf; /* Softer indigo */
   --indigo-500: #6366f1; /* Default indigo */
   --indigo-400: #818cf8; /* Lighter indigo */
@@ -20,7 +23,7 @@
   --font-mono: "Fira Code", "Courier New", monospace;
 }
 
-/* Dark Mode (already matches the desired dark theme) */
+/* Dark Mode (matches desired dark theme) */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0f172a;
@@ -43,10 +46,12 @@ body {
 
 /* Subtle Gradient Background */
 html {
-  background: linear-gradient(to bottom, var(--background), var(--gray-900));
+  background: linear-gradient(to bottom, var(--gray-800), var(--gray-900));
   min-height: 100vh;
 }
-
+button{
+  cursor: pointer;
+}
 /* Custom Utility Classes */
 @layer utilities {
   .text-gradient {
@@ -64,6 +69,13 @@ html {
   }
   .animate-fade-in-up {
     animation: fadeInUp 0.7s ease-out;
+  }
+  /* Button Contrast Utilities */
+  .btn-light-text {
+    color: var(--gray-900); /* Dark text for light backgrounds */
+  }
+  .btn-dark-text {
+    color: var(--gray-400); /* Light text for dark backgrounds */
   }
 }
 
@@ -128,13 +140,17 @@ h3 {
 
 /* Custom Button Styles */
 .btn {
-  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg;
+  @apply px-5 py-2.5 rounded-full font-medium transition-all duration-200 shadow-md hover:shadow-lg;
 }
 
 .btn-primary {
-  @apply bg-indigo-500 text-white hover:bg-indigo-600;
+  @apply bg-indigo-700 text-white hover:bg-indigo-600;
+}
+
+.btn-secondary {
+  @apply bg-gray-800 text-gray-300 border-2 border-gray-700 hover:bg-gray-700 hover:text-white hover:border-indigo-700;
 }
 
 .btn-danger {
-  @apply bg-teal-500 text-white hover:bg-teal-600; /* Changed from red to teal for harmony */
+  @apply bg-teal-500 text-white hover:bg-teal-600;
 }

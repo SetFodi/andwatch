@@ -9,26 +9,26 @@ import UserRating from "../../../components/UserRating";
 import connectDB from "../../../lib/db";
 import { User } from "../../../lib/models/User";
 
-// Map anime genres with colors
+// Map anime genres with updated colors
 const animeGenres = [
-  { id: 1, name: "Action", color: "from-red-600 to-orange-500" },
-  { id: 2, name: "Adventure", color: "from-green-600 to-emerald-500" },
-  { id: 4, name: "Comedy", color: "from-yellow-500 to-amber-400" },
-  { id: 8, name: "Drama", color: "from-purple-600 to-fuchsia-500" },
-  { id: 10, name: "Fantasy", color: "from-blue-600 to-indigo-500" },
-  { id: 14, name: "Horror", color: "from-gray-800 to-gray-900" },
-  { id: 7, name: "Mystery", color: "from-indigo-800 to-violet-700" },
-  { id: 22, name: "Romance", color: "from-pink-500 to-rose-400" },
-  { id: 24, name: "Sci-Fi", color: "from-cyan-600 to-blue-500" },
-  { id: 36, name: "Slice of Life", color: "from-teal-500 to-emerald-400" },
-  { id: 30, name: "Sports", color: "from-orange-600 to-amber-500" },
-  { id: 37, name: "Supernatural", color: "from-violet-700 to-purple-600" },
-  { id: 41, name: "Suspense", color: "from-slate-700 to-gray-600" },
+  { id: 1, name: "Action", color: "from-red-800 to-orange-700" },
+  { id: 2, name: "Adventure", color: "from-green-800 to-emerald-700" },
+  { id: 4, name: "Comedy", color: "from-yellow-700 to-amber-600" },
+  { id: 8, name: "Drama", color: "from-purple-800 to-fuchsia-700" },
+  { id: 10, name: "Fantasy", color: "from-blue-800 to-indigo-700" },
+  { id: 14, name: "Horror", color: "from-gray-900 to-gray-800" },
+  { id: 7, name: "Mystery", color: "from-indigo-900 to-violet-800" },
+  { id: 22, name: "Romance", color: "from-pink-700 to-rose-600" },
+  { id: 24, name: "Sci-Fi", color: "from-cyan-700 to-blue-700" },
+  { id: 36, name: "Slice of Life", color: "from-teal-700 to-emerald-600" },
+  { id: 30, name: "Sports", color: "from-orange-800 to-amber-700" },
+  { id: 37, name: "Supernatural", color: "from-violet-800 to-purple-700" },
+  { id: 41, name: "Suspense", color: "from-slate-800 to-gray-700" },
 ];
 
 function getGenreColor(genreId: number) {
   const genre = animeGenres.find(g => g.id === genreId);
-  return genre?.color || "from-indigo-600 to-violet-600";
+  return genre?.color || "from-indigo-700 to-violet-700";
 }
 
 async function getAnimeDetails(id: string) {
@@ -60,7 +60,6 @@ async function getUserWatchItem(userId: string, animeId: string) {
 }
 
 export default async function AnimeDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  // Await params to resolve the Promise
   const resolvedParams = await params;
   const session = await getServerSession(authOptions);
   const anime = await getAnimeDetails(resolvedParams.id);
@@ -69,24 +68,20 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
     notFound();
   }
 
-  // Get user's watch status and rating if logged in
   let userWatchItem = null;
   if (session?.user?.id) {
     userWatchItem = await getUserWatchItem(session.user.id, resolvedParams.id);
   }
 
-  // Format aired dates
   const startDate = anime.aired?.from ? new Date(anime.aired.from).toLocaleDateString() : "?";
   const endDate = anime.aired?.to ? new Date(anime.aired.to).toLocaleDateString() : 
                   (anime.status === "Currently Airing" ? "Present" : "?");
   
-  // Get primary genre for theme color
   const primaryGenreId = anime.genres?.[0]?.mal_id;
-  const genreColorClass = primaryGenreId ? getGenreColor(primaryGenreId) : "from-indigo-600 to-violet-600";
+  const genreColorClass = primaryGenreId ? getGenreColor(primaryGenreId) : "from-indigo-700 to-violet-700";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-indigo-950">
-      {/* Hero section with blurred background image */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-800 to-gray-900">
       <div className="relative">
         <div className="absolute inset-0 overflow-hidden z-0">
           {anime.images?.jpg?.large_image_url && (
@@ -98,12 +93,11 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
               priority
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/80 to-gray-900"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-800/80 to-gray-900"></div>
         </div>
         
         <div className="relative z-10 py-20 px-8 max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row gap-12">
-            {/* Poster Column */}
             <div className="w-full lg:w-1/3 flex flex-col">
               <div className={`rounded-xl overflow-hidden shadow-2xl border-2 border-gray-700 
                              relative group transition-all duration-300 
@@ -130,7 +124,6 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                 )}
               </div>
               
-              {/* Stats Panel */}
               <div className="mt-8 bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 border border-gray-700 shadow-xl">
                 <h3 className="text-xl font-bold text-white mb-4 flex items-center">
                   <svg className="w-5 h-5 mr-2 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
@@ -141,62 +134,61 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                 
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Format</span>
+                    <span className="text-gray-500">Format</span>
                     <span className="text-white font-medium">{anime.type || "Unknown"}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Episodes</span>
+                    <span className="text-gray-500">Episodes</span>
                     <span className="text-white font-medium">{anime.episodes || "Unknown"}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Status</span>
+                    <span className="text-gray-500">Status</span>
                     <span className="text-white font-medium">{anime.status || "Unknown"}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Aired</span>
+                    <span className="text-gray-500">Aired</span>
                     <span className="text-white font-medium">{startDate} to {endDate}</span>
                   </div>
                   
                   {anime.season && anime.year && (
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Season</span>
+                      <span className="text-gray-500">Season</span>
                       <span className="text-white font-medium capitalize">{anime.season} {anime.year}</span>
                     </div>
                   )}
                   
                   {anime.studios && anime.studios.length > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Studios</span>
+                      <span className="text-gray-500">Studios</span>
                       <span className="text-white font-medium text-right">{anime.studios.map(s => s.name).join(", ")}</span>
                     </div>
                   )}
                   
                   {anime.source && (
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Source</span>
+                      <span className="text-gray-500">Source</span>
                       <span className="text-white font-medium">{anime.source}</span>
                     </div>
                   )}
                   
                   {anime.duration && (
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Duration</span>
+                      <span className="text-gray-500">Duration</span>
                       <span className="text-white font-medium">{anime.duration}</span>
                     </div>
                   )}
                   
                   {anime.rating && (
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Rating</span>
+                      <span className="text-gray-500">Rating</span>
                       <span className="text-white font-medium">{anime.rating}</span>
                     </div>
                   )}
                 </div>
                 
-                {/* Popularity Stats */}
                 <div className="mt-6 pt-6 border-t border-gray-700">
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center">
@@ -205,22 +197,21 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                       </svg>
                       <span className="font-bold text-white">{anime.score ? anime.score.toFixed(2) : "N/A"}</span>
                     </div>
-                    <span className="text-gray-400 text-sm">{anime.scored_by ? `${anime.scored_by.toLocaleString()} users` : ""}</span>
+                    <span className="text-gray-500 text-sm">{anime.scored_by ? `${anime.scored_by.toLocaleString()} users` : ""}</span>
                   </div>
                   
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-400">Ranked</span>
+                    <span className="text-gray-500">Ranked</span>
                     <span className="text-white font-medium">#{anime.rank || "N/A"}</span>
                   </div>
                   
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Popularity</span>
+                    <span className="text-gray-500">Popularity</span>
                     <span className="text-white font-medium">#{anime.popularity || "N/A"}</span>
                   </div>
                 </div>
               </div>
               
-              {/* User Actions Section */}
               {session && (
                 <div className="mt-6 bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 border border-gray-700 shadow-xl">
                   <h3 className="text-xl font-bold text-white mb-4 flex items-center">
@@ -239,7 +230,7 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                   <div className="mt-6 pt-6 border-t border-gray-700">
                     <h4 className="font-bold text-white mb-3 flex items-center">
                       <svg className="w-4 h-4 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3 .921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784 .57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81 .588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                       My Rating
                     </h4>
@@ -254,7 +245,6 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
               )}
             </div>
             
-            {/* Content Column */}
             <div className="w-full lg:w-2/3">
               <div className="mb-6">
                 <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-2">
@@ -269,17 +259,14 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                   <h3 className="text-xl text-gray-500 mb-4">{anime.title_japanese}</h3>
                 )}
                 
-                {/* Genre Tags */}
-                <div className="flex flex-wrap gap-2 mb-6">
+                <div className="flex flex-wrap gap-4">
                   {anime.genres?.map((genre) => {
                     const genreColor = getGenreColor(genre.mal_id);
                     return (
                       <Link 
                         key={genre.mal_id} 
                         href={`/anime?genre=${genre.mal_id}`}
-                        className={`px-4 py-2 rounded-full text-sm font-medium 
-                                  bg-gradient-to-r ${genreColor} text-white
-                                  transition-all duration-200 hover:shadow-lg`}
+                        className={`btn btn-secondary bg-gradient-to-r ${genreColor} hover:shadow-xl`}
                       >
                         {genre.name}
                       </Link>
@@ -288,7 +275,6 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                 </div>
               </div>
               
-              {/* Synopsis */}
               <div className="mb-10">
                 <div className="bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 border border-gray-700 shadow-xl">
                   <h3 className="text-xl font-bold text-white mb-4 flex items-center">
@@ -304,7 +290,6 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                 </div>
               </div>
               
-              {/* Trailer */}
               {anime.trailer && anime.trailer.youtube_id && (
                 <div className="mb-10">
                   <div className="bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 border border-gray-700 shadow-xl">
@@ -329,7 +314,6 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                 </div>
               )}
               
-              {/* Characters */}
               {anime.characters && anime.characters.length > 0 && (
                 <div className="mb-10">
                   <div className="bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 border border-gray-700 shadow-xl">
@@ -366,9 +350,9 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                             </div>
                             <div className="p-3 flex-1">
                               <p className="font-medium text-white text-sm line-clamp-1">{character.character.name}</p>
-                              <p className="text-xs text-gray-400 line-clamp-1">{character.role}</p>
+                              <p className="text-xs text-gray-500 line-clamp-1">{character.role}</p>
                               {character.voice_actors && character.voice_actors.length > 0 && (
-                                <p className="text-xs text-indigo-400 mt-1 line-clamp-1">
+                                <p className="text-xs text-indigo-300 mt-1 line-clamp-1">
                                   VA: {character.voice_actors[0].person.name}
                                 </p>
                               )}
@@ -381,13 +365,12 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                 </div>
               )}
               
-              {/* Recommendations */}
               {anime.recommendations && anime.recommendations.length > 0 && (
                 <div className="mb-10">
                   <div className="bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 border border-gray-700 shadow-xl">
                     <h3 className="text-xl font-bold text-white mb-6 flex items-center">
                       <svg className="w-5 h-5 mr-2 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z" />
+                        <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                       </svg>
                       You Might Also Like
                     </h3>
@@ -406,7 +389,7 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                                     fill
                                     className="object-cover"
                                   />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent"></div>
+                                  <div className="absolute inset-0 bg-gradient-to-t from-gray-800 via-transparent to-transparent"></div>
                                 </>
                               ) : (
                                 <div className="w-full h-full bg-gray-700 flex items-center justify-center">
@@ -427,7 +410,7 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                     <div className="mt-4 text-center">
                       <Link 
                         href="/anime" 
-                        className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 
+                        className="inline-block px-4 py-2 bg-indigo-700 hover:bg-indigo-600 
                                    text-white rounded-lg transition-colors duration-200"
                       >
                         Discover More Anime
@@ -437,7 +420,6 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                 </div>
               )}
               
-              {/* Related anime */}
               {anime.relations && anime.relations.length > 0 && (
                 <div className="mb-10">
                   <div className="bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 border border-gray-700 shadow-xl">
@@ -463,7 +445,7 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                                   {entry.name}
                                 </Link>
                               ) : (
-                                <span key={entry.mal_id} className="px-3 py-1 bg-gray-700 rounded text-gray-400 text-sm">
+                                <span key={entry.mal_id} className="px-3 py-1 bg-gray-700 rounded text-gray-500 text-sm">
                                   {entry.name}
                                 </span>
                               )
@@ -476,7 +458,6 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                 </div>
               )}
               
-              {/* User reviews section */}
               <div className="mb-8">
                 <div className="bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 border border-gray-700 shadow-xl">
                   <div className="flex justify-between items-center mb-6">
@@ -488,7 +469,7 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                     </h3>
                     
                     {session && (
-                      <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white 
+                      <button className="px-4 py-2 bg-indigo-700 hover:bg-indigo-600 text-white 
                                         rounded-lg text-sm font-medium transition-colors duration-200">
                         Write a Review
                       </button>
@@ -496,15 +477,15 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                   </div>
                   
                   <div className="text-center py-8">
-                    <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-16 h-16 mx-auto mb-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
                     </svg>
-                    <p className="text-gray-400 mb-4">No reviews yet. Be the first to share your thoughts!</p>
+                    <p className="text-gray-500 mb-4">No reviews yet. Be the first to share your thoughts!</p>
                     
                     {!session && (
                       <Link 
                         href="/auth/signin" 
-                        className="inline-block px-6 py-3 bg-indigo-600 hover:bg-indigo-700 
+                        className="inline-block px-6 py-3 bg-indigo-700 hover:bg-indigo-600 
                                  text-white rounded-lg font-medium transition-colors duration-200"
                       >
                         Sign in to write a review
