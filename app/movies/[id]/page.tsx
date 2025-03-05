@@ -1,4 +1,3 @@
-// app/movies/[id]/page.tsx
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../api/auth/[...nextauth]/route";
 import { movieApi } from "../../../lib/services/api";
@@ -35,9 +34,11 @@ async function getUserWatchItem(userId: string, movieId: string) {
   }
 }
 
-export default async function Page({ params }: { params: { id: string } }) {
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  // Await params to resolve the Promise
+  const resolvedParams = await params;
   const session = await getServerSession(authOptions);
-  const movie = await getMovieDetails(params.id);
+  const movie = await getMovieDetails(resolvedParams.id);
   
   if (!movie) {
     notFound();
@@ -46,14 +47,14 @@ export default async function Page({ params }: { params: { id: string } }) {
   // Get user's watch status and rating if logged in
   let userWatchItem = null;
   if (session?.user?.id) {
-    userWatchItem = await getUserWatchItem(session.user.id, params.id);
+    userWatchItem = await getUserWatchItem(session.user.id, resolvedParams.id);
   }
 
   // Pass the fetched data to the client component
   return (
     <MovieDetailsClient 
       movie={movie} 
-      id={params.id}
+      id={resolvedParams.id}
       userWatchItem={userWatchItem}
       session={!!session} // Just pass if user is logged in or not
     />

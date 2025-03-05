@@ -1,4 +1,3 @@
-// app/anime/[id]/page.tsx
 import Image from "next/image";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
@@ -60,9 +59,11 @@ async function getUserWatchItem(userId: string, animeId: string) {
   }
 }
 
-export default async function AnimeDetailsPage({ params }: { params: { id: string } }) {
+export default async function AnimeDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  // Await params to resolve the Promise
+  const resolvedParams = await params;
   const session = await getServerSession(authOptions);
-  const anime = await getAnimeDetails(params.id);
+  const anime = await getAnimeDetails(resolvedParams.id);
   
   if (!anime) {
     notFound();
@@ -71,7 +72,7 @@ export default async function AnimeDetailsPage({ params }: { params: { id: strin
   // Get user's watch status and rating if logged in
   let userWatchItem = null;
   if (session?.user?.id) {
-    userWatchItem = await getUserWatchItem(session.user.id, params.id);
+    userWatchItem = await getUserWatchItem(session.user.id, resolvedParams.id);
   }
 
   // Format aired dates
@@ -230,7 +231,7 @@ export default async function AnimeDetailsPage({ params }: { params: { id: strin
                   </h3>
                   
                   <WatchStatusButtons 
-                    itemId={params.id}
+                    itemId={resolvedParams.id}
                     mediaType="anime"
                     currentStatus={userWatchItem?.status || null}
                   />
@@ -238,13 +239,13 @@ export default async function AnimeDetailsPage({ params }: { params: { id: strin
                   <div className="mt-6 pt-6 border-t border-gray-700">
                     <h4 className="font-bold text-white mb-3 flex items-center">
                       <svg className="w-4 h-4 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3 .921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784 .57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81 .588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                       My Rating
                     </h4>
                     
                     <UserRating 
-                      itemId={params.id}
+                      itemId={resolvedParams.id}
                       mediaType="anime"
                       currentRating={userWatchItem?.userRating || null}
                     />
@@ -292,7 +293,7 @@ export default async function AnimeDetailsPage({ params }: { params: { id: strin
                 <div className="bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 border border-gray-700 shadow-xl">
                   <h3 className="text-xl font-bold text-white mb-4 flex items-center">
                     <svg className="w-5 h-5 mr-2 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 08 8 0 8 8 0 016 0zm-2 3a2 2 0 002 2m-2-2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7H3a2 2 0 01-2-2V8a2 2 0 012-2h3.9a5.002 5.002 0 0110.2 0H20a2 2 0 012 2v2a2 2 0 01-2 2h-2z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 3a2 2 0 002 2m-2-2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7H3a2 2 0 01-2-2V8a2 2 0 012-2h3.9a5.002 5.002 0 0110.2 0H20a2 2 0 012 2v2a2 2 0 01-2 2h-2z" clipRule="evenodd" />
                     </svg>
                     Synopsis
                   </h3>

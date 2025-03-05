@@ -1,28 +1,30 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Fira+Code&display=swap');
+
 /* Custom CSS Variables */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --gray-900: #1a1a1a;
-  --gray-800: #2d2d2d;
-  --gray-700: #404040;
-  --gray-600: #595959;
-  --gray-500: #737373;
-  --gray-400: #a3a3a3;
-  --indigo-600: #4f46e5;
-  --indigo-500: #6366f1;
-  --indigo-400: #818cf8;
-  --indigo-300: #a5b4fc;
+  --background: #0f172a; /* Deeper navy blue for better contrast */
+  --foreground: #f1f5f9; /* Light gray for text */
+  --gray-900: #1e293b; /* Darker gray for gradients */
+  --gray-800: #334155; /* Medium gray for cards */
+  --gray-700: #475569; /* Subtle gray for borders */
+  --gray-600: #64748b; /* Gray for secondary text */
+  --gray-500: #94a3b8; /* Light gray for accents */
+  --indigo-600: #4c51bf; /* Softer indigo */
+  --indigo-500: #6366f1; /* Default indigo */
+  --indigo-400: #818cf8; /* Lighter indigo */
+  --indigo-300: #a5b4fc; /* Very light indigo */
+  --teal-600: #2dd4bf; /* Teal for accents */
+  --teal-500: #14b8a6; /* Default teal */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   --font-mono: "Fira Code", "Courier New", monospace;
 }
 
-/* Dark Mode */
+/* Dark Mode (already matches the desired dark theme) */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0f172a;
+    --foreground: #f1f5f9;
   }
 }
 
@@ -56,6 +58,34 @@ html {
   html {
     scroll-behavior: smooth;
   }
+  /* Animation Utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in;
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 0.7s ease-out;
+  }
+}
+
+/* Animation Keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Reset */
@@ -75,12 +105,36 @@ a:hover {
 }
 
 /* Headings */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 300;
   line-height: 1.2;
   margin-bottom: 0.5em;
 }
 
-h1 { font-size: 2.5rem; }
-h2 { font-size: 2rem; }
-h3 { font-size: 1.5rem; }
+h1 {
+  font-size: 2.5rem;
+}
+h2 {
+  font-size: 2rem;
+}
+h3 {
+  font-size: 1.5rem;
+}
+
+/* Custom Button Styles */
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg;
+}
+
+.btn-primary {
+  @apply bg-indigo-500 text-white hover:bg-indigo-600;
+}
+
+.btn-danger {
+  @apply bg-teal-500 text-white hover:bg-teal-600; /* Changed from red to teal for harmony */
+}

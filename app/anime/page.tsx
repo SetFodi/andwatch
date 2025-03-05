@@ -90,10 +90,13 @@ function Pagination({ pagination, q, genreId }) {
 
 // Main Component
 export default async function AnimeList({ searchParams }) {
-  const genre = searchParams?.genre || null;
+  // Await searchParams to resolve the Promise
+  const resolvedSearchParams = await searchParams;
+  
+  const genre = resolvedSearchParams?.genre || null;
   const genreId = genre ? parseInt(genre, 10) : null;
-  const q = searchParams?.q || null;
-  const page = parseInt(searchParams?.page || "1", 10) || 1;
+  const q = resolvedSearchParams?.q || null;
+  const page = parseInt(resolvedSearchParams?.page || "1", 10) || 1;
 
   let animeData;
   try {
