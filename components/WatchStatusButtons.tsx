@@ -39,40 +39,8 @@ const watchStatusOptions = [
       </svg>
     )
   },
-  { 
-    value: 'on-hold', 
-    label: 'On Hold', 
-    colors: {
-      blue: 'bg-yellow-600 hover:bg-yellow-700',
-      red: 'bg-amber-600 hover:bg-amber-700',
-      active: {
-        blue: 'bg-yellow-700',
-        red: 'bg-amber-700'
-      }
-    },
-    icon: (
-      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-      </svg>
-    )
-  },
-  { 
-    value: 'dropped', 
-    label: 'Dropped', 
-    colors: {
-      blue: 'bg-gray-600 hover:bg-gray-700',
-      red: 'bg-gray-600 hover:bg-gray-700',
-      active: {
-        blue: 'bg-gray-700',
-        red: 'bg-gray-700'
-      }
-    },
-    icon: (
-      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-      </svg>
-    )
-  },
+
+
   { 
     value: 'plan_to_watch', 
     label: 'Plan to Watch', 
@@ -109,35 +77,46 @@ export default function WatchStatusButtons({
   const [status, setStatus] = useState<string | null>(currentStatus);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const updateWatchStatus = async (newStatus: string) => {
-    // If clicking the current status, remove from list
     const statusToSet = status === newStatus ? null : newStatus;
     
     setLoading(true);
     setError(null);
     
     try {
+      console.log('Updating watch status:', { externalId: itemId, mediaType, status: statusToSet });
+      
       const response = await fetch('/api/user/watchlist', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          externalId: itemId,
-          mediaType,
-          status: statusToSet,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ externalId: itemId, mediaType, status: statusToSet }),
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Failed to update watch status');
       }
       
+      console.log('Watch status updated successfully:', data);
       setStatus(statusToSet);
-      router.refresh();
-    } catch (err: any) {
+      
+      // Add visual feedback
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50';
+      toast.textContent = statusToSet 
+        ? `Added to ${watchStatusOptions.find(opt => opt.value === statusToSet)?.label}` 
+        : 'Removed from list';
+      document.body.appendChild(toast);
+      setTimeout(() => document.body.removeChild(toast), 3000);
+      
+      // Force HARD refresh
+// In both UserRating.tsx and WatchStatusButtons.tsx
+// Add this delay before reload to ensure the database update completes
+setTimeout(() => {
+  window.location.reload();
+}, 500); // 500ms delay
+    } catch (err) {
       setError(err.message);
       console.error('Error updating watch status:', err);
     } finally {
@@ -154,9 +133,10 @@ export default function WatchStatusButtons({
       <div className="grid grid-cols-2 gap-2">
         {watchStatusOptions.map((option) => {
           // Determine the correct color based on status and theme
-          const buttonColor = status === option.value
-            ? option.colors.active[colorTheme]
-            : option.colors[colorTheme];
+// Update button style for active buttons
+const buttonColor = status === option.value
+  ? `${option.colors.active[colorTheme]} ring-2 ring-white/20 font-semibold shadow-lg`
+  : option.colors[colorTheme];
           
           return (
             <button

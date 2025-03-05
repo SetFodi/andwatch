@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useState } from "react";
 
 interface ProfileHeaderProps {
   user: {
@@ -19,12 +18,6 @@ interface ProfileHeaderProps {
 
 export default function ProfileHeader({ user, totalWatching, totalPlanning, totalCompleted }: ProfileHeaderProps) {
   const userName = user.displayName || user.username || user.email.split('@')[0];
-  const [avatarError, setAvatarError] = useState(false);
-
-  // Create a full URL for the avatar if it exists
-  const avatarUrl = user.avatar 
-    ? `${process.env.NEXT_PUBLIC_BASE_URL || ''}${user.avatar}?t=${Date.now()}` // Add cache-busting query parameter
-    : null;
 
   return (
     <motion.div
@@ -51,18 +44,14 @@ export default function ProfileHeader({ user, totalWatching, totalPlanning, tota
               whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)" }}
               className="relative h-32 w-32 rounded-2xl overflow-hidden -mt-24 ring-4 ring-gray-950 shadow-2xl"
             >
-              {avatarUrl && !avatarError ? (
+              {user.avatar ? (
                 <Image
-                  src={avatarUrl}
+                  src={user.avatar}
                   alt={userName}
                   fill
                   className="object-cover"
                   sizes="(max-width: 640px) 100vw, 33vw"
                   priority
-                  onError={() => {
-                    console.log("Avatar load error, falling back to initial");
-                    setAvatarError(true);
-                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-500 to-violet-600 text-white text-4xl font-bold">
@@ -96,11 +85,11 @@ export default function ProfileHeader({ user, totalWatching, totalPlanning, tota
                 href="/profile/edit"
                 className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl text-white text-sm font-medium hover:from-indigo-700 hover:to-violet-700 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 transform"
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 text-white">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  Edit Profile
+                 <p className="text-white">Edit Profile</p> 
                 </span>
               </Link>
             </motion.div>

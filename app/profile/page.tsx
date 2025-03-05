@@ -89,6 +89,11 @@ export default async function Profile() {
   const planToWatchMovies = userDoc.watchlist.filter(item => item.status === "plan_to_watch" && item.mediaType === "movie");
   const completedAnime = userDoc.watchlist.filter(item => item.status === "completed" && item.mediaType === "anime");
   const completedMovies = userDoc.watchlist.filter(item => item.status === "completed" && item.mediaType === "movie");
+  
+  // Add filter for rating-only items (no status)
+  const ratingOnlyItems = userDoc.watchlist.filter(item => 
+    !item.status && item.userRating 
+  );
 
   const watchingAnimeDetails = await Promise.all(
     watchingAnime.map(item => getAnimeDetails(item.externalId, item))
@@ -113,13 +118,25 @@ export default async function Profile() {
   const completedMovieDetails = await Promise.all(
     completedMovies.map(item => getMovieDetails(item.externalId, item))
   ).then(results => results.filter(Boolean));
+  
+  // Process rating-only items 
+  const ratingOnlyAnimeDetails = await Promise.all(
+    ratingOnlyItems.filter(item => item.mediaType === "anime")
+      .map(item => getAnimeDetails(item.externalId, item))
+  ).then(results => results.filter(Boolean));
+  
+  const ratingOnlyMovieDetails = await Promise.all(
+    ratingOnlyItems.filter(item => item.mediaType === "movie")
+      .map(item => getMovieDetails(item.externalId, item))
+  ).then(results => results.filter(Boolean));
 
   const watchingItems = [...watchingAnimeDetails, ...watchingMovieDetails];
-  const planningItems = [...planAnimeDetails, ...planMovieDetails];
+  const planningItems = [...planAnimeDetails, ...planMovieDetails, 
+                         ...ratingOnlyAnimeDetails, ...ratingOnlyMovieDetails];
   const completedItems = [...completedAnimeDetails, ...completedMovieDetails];
 
   const totalWatching = watchingAnime.length + watchingMovies.length;
-  const totalPlanning = planToWatchAnime.length + planToWatchMovies.length;
+  const totalPlanning = planToWatchAnime.length + planToWatchMovies.length + ratingOnlyItems.length;
   const totalCompleted = completedAnime.length + completedMovies.length;
 
   return (

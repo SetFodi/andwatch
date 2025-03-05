@@ -39,33 +39,45 @@ export default function UserRating({
   };
   
   const updateRating = async (newRating: number) => {
-    // If clicking the current rating, remove the rating
     const ratingToSet = rating === newRating ? null : newRating;
-    
+     
     setLoading(true);
     setError(null);
-    
+     
     try {
+      // Add logging to debug the request
+      console.log('Updating rating:', { externalId: itemId, mediaType, rating: ratingToSet });
+      
       const response = await fetch('/api/user/rating', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          externalId: itemId,
-          mediaType,
-          rating: ratingToSet,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ externalId: itemId, mediaType, rating: ratingToSet }),
       });
+       
+      const data = await response.json();
       
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Failed to update rating');
       }
       
+      console.log('Rating updated successfully:', data);
       setRating(ratingToSet);
-      router.refresh();
-    } catch (err: any) {
+      
+      // Add visible success message
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50';
+      toast.textContent = ratingToSet ? `Rated ${ratingToSet}/10` : 'Rating removed';
+      document.body.appendChild(toast);
+      setTimeout(() => document.body.removeChild(toast), 3000);
+      
+      // Force a HARD refresh to reload all data
+// In both UserRating.tsx and WatchStatusButtons.tsx
+// Add this delay before reload to ensure the database update completes
+setTimeout(() => {
+  window.location.reload();
+}, 500); // 500ms delay
+    } catch (err) {
+      // Error handling
       setError(err.message);
       console.error('Error updating rating:', err);
     } finally {

@@ -1,3 +1,4 @@
+// app/anime/[id]/page.tsx
 import Image from "next/image";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
@@ -8,6 +9,7 @@ import WatchStatusButtons from "../../../components/WatchStatusButtons";
 import UserRating from "../../../components/UserRating";
 import connectDB from "../../../lib/db";
 import { User } from "../../../lib/models/User";
+import ReviewsSection from "@/components/ReviewsSection";
 
 // Map anime genres with updated colors
 const animeGenres = [
@@ -457,43 +459,15 @@ export default async function AnimeDetailsPage({ params }: { params: Promise<{ i
                   </div>
                 </div>
               )}
-              
-              <div className="mb-8">
-                <div className="bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 border border-gray-700 shadow-xl">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-white flex items-center">
-                      <svg className="w-5 h-5 mr-2 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 13V5a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h3l3 3 3-3h3a2 2 0 002-2zM5 7a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H6z" clipRule="evenodd" />
-                      </svg>
-                      User Reviews
-                    </h3>
-                    
-                    {session && (
-                      <button className="px-4 py-2 bg-indigo-700 hover:bg-indigo-600 text-white 
-                                        rounded-lg text-sm font-medium transition-colors duration-200">
-                        Write a Review
-                      </button>
-                    )}
-                  </div>
-                  
-                  <div className="text-center py-8">
-                    <svg className="w-16 h-16 mx-auto mb-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                    </svg>
-                    <p className="text-gray-500 mb-4">No reviews yet. Be the first to share your thoughts!</p>
-                    
-                    {!session && (
-                      <Link 
-                        href="/auth/signin" 
-                        className="inline-block px-6 py-3 bg-indigo-700 hover:bg-indigo-600 
-                                 text-white rounded-lg font-medium transition-colors duration-200"
-                      >
-                        Sign in to write a review
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </div>
+<ReviewsSection
+  itemId={resolvedParams.id}
+  mediaType="anime"
+  itemTitle={anime.title}
+  itemImage={anime.images?.jpg?.large_image_url}
+  session={!!session}
+  userId={session?.user?.id}
+  colorTheme="indigo"
+/>
             </div>
           </div>
         </div>

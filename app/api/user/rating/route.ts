@@ -37,25 +37,30 @@ export async function POST(req: NextRequest) {
       (item: any) => item.externalId === externalId && item.mediaType === mediaType
     );
     
-    if (existingItemIndex !== -1) {
-      // Update existing item
-      user.watchlist[existingItemIndex].userRating = rating;
-      if (notes) {
-        user.watchlist[existingItemIndex].notes = notes;
-      }
-      user.watchlist[existingItemIndex].updatedAt = new Date();
-    } else if (rating !== null) {
-      // Add new item to watchlist with plan_to_watch status by default
-      user.watchlist.push({
-        externalId,
-        mediaType,
-        status: 'plan_to_watch',
-        userRating: rating,
-        notes,
-        addedAt: new Date(),
-        updatedAt: new Date()
-      });
-    }
+// In app/api/user/rating/route.ts POST handler:
+if (existingItemIndex !== -1) {
+  // Update existing item
+  if (rating === null) {
+    // Just remove the rating without affecting status
+    user.watchlist[existingItemIndex].userRating = null;
+  } else {
+    user.watchlist[existingItemIndex].userRating = rating;
+  }
+  if (notes) {
+    user.watchlist[existingItemIndex].notes = notes;
+  }
+  user.watchlist[existingItemIndex].updatedAt = new Date();
+} else if (rating !== null) {
+  // Add new item with rating but no status
+  user.watchlist.push({
+    externalId,
+    mediaType,
+    userRating: rating,
+    notes,
+    addedAt: new Date(),
+    updatedAt: new Date()
+  });
+}
     
     await user.save();
     

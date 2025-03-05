@@ -1,3 +1,4 @@
+// app/movies/[id]/page.tsx
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../api/auth/[...nextauth]/route";
 import { movieApi } from "../../../lib/services/api";
