@@ -47,15 +47,15 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               </div>
             </nav>
 
-            {/* User Section */}
-            <div className="flex items-center space-x-4">
-              {/* Search Button with Hover Effect */}
-              <button className="relative p-2.5 text-gray-400 hover:text-white transition-colors duration-200 rounded-xl hover:bg-gray-800/50 group">
+{/* User Section */}
+<div className="flex items-center space-x-4">
+              {/* Search Button (now a Link) */}
+              <Link href="/search" className="relative p-2.5 text-gray-400 hover:text-white transition-colors duration-200 rounded-xl hover:bg-gray-800/50 group">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <span className="absolute inset-0 rounded-xl ring-2 ring-indigo-500/0 group-hover:ring-indigo-500/50 transition-all duration-300"></span>
-              </button>
+              </Link>
 
               {session ? (
                 <div className="flex items-center">
@@ -111,8 +111,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                       </div>
                       <div className="py-2">
                         <MenuLink href="/profile" label="Profile" icon={<ProfileIcon />} />
-                        <MenuLink href="/profile/watchlist" label="My Watchlist" icon={<WatchlistIcon />} />
-                        <MenuLink href="/profile/settings" label="Settings" icon={<SettingsIcon />} />
                         <div className="px-3 pt-2 mt-1">
                           <form action="/api/auth/signout" method="post" className="w-full">
                             <button type="submit" className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-950/30 rounded-lg transition-colors duration-200">
