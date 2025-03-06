@@ -26,12 +26,16 @@ async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      connectTimeoutMS: 10000,
-      serverSelectionTimeoutMS: 10000,
+      // Reduce timeout values for faster failure in serverless environment
+      connectTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 5000,
+      // Add these options for better performance
+      maxPoolSize: 10,
+      minPoolSize: 5
     };
 
     mongoose.set('strictQuery', true);
-
+    
     cached.promise = mongoose.connect(MONGODB_URI!, opts)
       .then((mongoose) => {
         console.log('Connected to MongoDB');
@@ -39,17 +43,18 @@ async function connectDB() {
       })
       .catch((err) => {
         console.error('MongoDB connection error:', err);
+        cached.promise = null; // Reset promise on error
         throw err;
       });
   }
-  
+
   try {
     cached.conn = await cached.promise;
   } catch (e) {
     cached.promise = null;
     throw e;
   }
-
+  
   return cached.conn;
 }
 
