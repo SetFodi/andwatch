@@ -1,6 +1,6 @@
 'use client';
 // components/WatchStatusButtons.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 // Watch status options with theme variations
@@ -39,8 +39,6 @@ const watchStatusOptions = [
       </svg>
     )
   },
-
-
   { 
     value: 'plan_to_watch', 
     label: 'Plan to Watch', 
@@ -65,23 +63,35 @@ interface WatchStatusButtonsProps {
   mediaType: 'anime' | 'movie';
   currentStatus: string | null;
   colorTheme?: 'blue' | 'red';
+  onStatusChange?: (newStatus: string | null) => void;
 }
 
 export default function WatchStatusButtons({ 
   itemId,
   mediaType,
   currentStatus,
-  colorTheme = 'blue'
+  colorTheme = 'blue',
+  onStatusChange
 }: WatchStatusButtonsProps) {
   const router = useRouter();
   const [status, setStatus] = useState<string | null>(currentStatus);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Reset state when props change
+  useEffect(() => {
+    setStatus(currentStatus);
+    setError(null);
+    setSuccess(false);
+  }, [currentStatus, itemId, mediaType]);
+  
   const updateWatchStatus = async (newStatus: string) => {
     const statusToSet = status === newStatus ? null : newStatus;
     
     setLoading(true);
     setError(null);
+    setSuccess(false);
     
     try {
       console.log('Updating watch status:', { externalId: itemId, mediaType, status: statusToSet });
@@ -100,6 +110,7 @@ export default function WatchStatusButtons({
       
       console.log('Watch status updated successfully:', data);
       setStatus(statusToSet);
+      setSuccess(true);
       
       // Add visual feedback
       const toast = document.createElement('div');
@@ -108,15 +119,25 @@ export default function WatchStatusButtons({
         ? `Added to ${watchStatusOptions.find(opt => opt.value === statusToSet)?.label}` 
         : 'Removed from list';
       document.body.appendChild(toast);
-      setTimeout(() => document.body.removeChild(toast), 3000);
+      setTimeout(() => {
+        if (document.body.contains(toast)) {
+          document.body.removeChild(toast);
+        }
+      }, 3000);
       
-      // Force HARD refresh
-// In both UserRating.tsx and WatchStatusButtons.tsx
-// Add this delay before reload to ensure the database update completes
-setTimeout(() => {
-  window.location.reload();
-}, 500); // 500ms delay
-    } catch (err) {
+      // Use the callback to inform parent component of the change
+      if (onStatusChange) {
+        onStatusChange(statusToSet);
+      }
+      
+      // Trigger a soft refresh instead of a hard page reload
+      router.refresh();
+      
+      // If we need to preserve a rating, handle it in a more controlled way
+      if (data.item && data.item.userRating) {
+        // Rating is already preserved in the API response, no need for additional API calls
+      }
+    } catch (err: any) {
       setError(err.message);
       console.error('Error updating watch status:', err);
     } finally {
@@ -130,13 +151,16 @@ setTimeout(() => {
         <div className="mb-3 text-sm text-red-400">{error}</div>
       )}
       
+      {success && (
+        <div className="mb-3 text-sm text-green-400">Watch status updated successfully!</div>
+      )}
+      
       <div className="grid grid-cols-2 gap-2">
         {watchStatusOptions.map((option) => {
           // Determine the correct color based on status and theme
-// Update button style for active buttons
-const buttonColor = status === option.value
-  ? `${option.colors.active[colorTheme]} ring-2 ring-white/20 font-semibold shadow-lg`
-  : option.colors[colorTheme];
+          const buttonColor = status === option.value
+            ? `${option.colors.active[colorTheme]} ring-2 ring-white/20 font-semibold shadow-lg`
+            : option.colors[colorTheme];
           
           return (
             <button

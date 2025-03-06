@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { externalId, mediaType, status } = await req.json();
+    const { externalId, mediaType, status, progress, notes } = await req.json();
 
     if (!externalId || !mediaType) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -30,17 +30,24 @@ export async function POST(req: NextRequest) {
 
     // Find if the item exists in the watchlist
     const existingItemIndex = user.watchlist.findIndex(
-      (item: any) => item.externalId === externalId && item.mediaType === mediaType
+      (item) => item.externalId === externalId && item.mediaType === mediaType
     );
 
+    // Handle status update logic
     if (status === null) {
-      // Remove from watchlist if status is null
+      // If removing status but there's a rating, keep the item but set status to null
       if (existingItemIndex !== -1) {
-        user.watchlist.splice(existingItemIndex, 1);
+        if (user.watchlist[existingItemIndex].userRating) {
+          user.watchlist[existingItemIndex].status = null;
+          user.watchlist[existingItemIndex].updatedAt = new Date();
+        } else {
+          // If no rating either, remove the item completely
+          user.watchlist.splice(existingItemIndex, 1);
+        }
       }
     } else {
       // Validate status
-      const validStatuses = ["watching", "completed", "on-hold", "dropped", "plan_to_watch"];
+      const validStatuses = ["watching", "completed", "plan_to_watch", "on-hold", "dropped"];
       if (!validStatuses.includes(status)) {
         return NextResponse.json({ error: "Invalid status" }, { status: 400 });
       }
@@ -48,25 +55,68 @@ export async function POST(req: NextRequest) {
       if (existingItemIndex !== -1) {
         // Update existing item
         user.watchlist[existingItemIndex].status = status;
+        
+        // Don't overwrite existing rating if present
+        if (progress !== undefined) {
+          user.watchlist[existingItemIndex].progress = progress;
+        }
+        
+        if (notes) {
+          user.watchlist[existingItemIndex].notes = notes;
+        }
+        
         user.watchlist[existingItemIndex].updatedAt = new Date();
+        
+        // If completing an item, set completedAt date
+        if (status === 'completed') {
+          user.watchlist[existingItemIndex].completedAt = new Date();
+        }
       } else {
         // Add new item to watchlist
-        user.watchlist.push({
+        const newItem = {
           externalId,
           mediaType,
           status,
+          progress: progress || 0,
+          notes: notes || "",
           addedAt: new Date(),
           updatedAt: new Date(),
-        });
+          userRating: null,
+          ...(status === 'completed' ? { completedAt: new Date() } : {})
+        };
+        
+        user.watchlist.push(newItem);
       }
     }
 
-    await user.save();
+    // Save to database with proper error handling
+    try {
+      await user.save();
+    } catch (saveError) {
+      console.error("Error saving user data:", saveError);
+      return NextResponse.json({ 
+        error: "Database error: Could not save changes",
+        details: saveError.message
+      }, { status: 500 });
+    }
 
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
+    // Return the updated item info
+    const updatedItemIndex = user.watchlist.findIndex(
+      (item) => item.externalId === externalId && item.mediaType === mediaType
+    );
+    
+    const updatedItem = updatedItemIndex !== -1 ? user.watchlist[updatedItemIndex] : null;
+
+    return NextResponse.json({ 
+      success: true,
+      item: updatedItem
+    });
+  } catch (error) {
     console.error("Error updating watchlist:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Server error", 
+      details: error.message || "Unknown error" 
+    }, { status: 500 });
   }
 }
 
@@ -97,55 +147,19 @@ export async function GET(req: NextRequest) {
     }
 
     if (status) {
-      filteredWatchlist = filteredWatchlist.filter((item) => item.status === status);
+      // Special case for null status (rated but not categorized)
+      if (status === "null") {
+        filteredWatchlist = filteredWatchlist.filter((item) => item.status === null && item.userRating !== null);
+      } else {
+        filteredWatchlist = filteredWatchlist.filter((item) => item.status === status);
+      }
     }
 
     return NextResponse.json({
       watchlist: filteredWatchlist,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error fetching watchlist:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
-
-// Remove item from user's watchlist
-export async function DELETE(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-
-  if (!session || !session.user?.id) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-
-  try {
-    const { externalId, mediaType } = await req.json();
-
-    if (!externalId || !mediaType) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
-
-    await connectDB();
-
-    const user = await User.findById(session.user.id);
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Find and remove the item from the watchlist
-    const existingItemIndex = user.watchlist.findIndex(
-      (item: any) => item.externalId === externalId && item.mediaType === mediaType
-    );
-
-    if (existingItemIndex === -1) {
-      return NextResponse.json({ error: "Item not found in watchlist" }, { status: 404 });
-    }
-
-    user.watchlist.splice(existingItemIndex, 1);
-    await user.save();
-
-    return NextResponse.json({ success: true, message: "Item removed successfully" }, { status: 200 });
-  } catch (error: any) {
-    console.error("Error removing item from watchlist:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Unknown error occurred" }, { status: 500 });
   }
 }

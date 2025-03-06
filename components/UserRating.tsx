@@ -1,6 +1,6 @@
 'use client';
 // components/UserRating.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface UserRatingProps {
@@ -8,19 +8,29 @@ interface UserRatingProps {
   mediaType: 'anime' | 'movie';
   currentRating: number | null;
   colorTheme?: 'blue' | 'red';
+  onRatingChange?: (newRating: number | null) => void;
 }
 
 export default function UserRating({
   itemId,
   mediaType,
   currentRating,
-  colorTheme = 'blue'
+  colorTheme = 'blue',
+  onRatingChange
 }: UserRatingProps) {
   const router = useRouter();
   const [rating, setRating] = useState<number | null>(currentRating);
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Reset state when props change
+  useEffect(() => {
+    setRating(currentRating);
+    setError(null);
+    setSuccess(false);
+  }, [currentRating, itemId, mediaType]);
   
   // Theme color configurations
   const themeColors = {
@@ -43,6 +53,7 @@ export default function UserRating({
      
     setLoading(true);
     setError(null);
+    setSuccess(false);
      
     try {
       // Add logging to debug the request
@@ -62,21 +73,28 @@ export default function UserRating({
       
       console.log('Rating updated successfully:', data);
       setRating(ratingToSet);
+      setSuccess(true);
       
       // Add visible success message
       const toast = document.createElement('div');
       toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50';
       toast.textContent = ratingToSet ? `Rated ${ratingToSet}/10` : 'Rating removed';
       document.body.appendChild(toast);
-      setTimeout(() => document.body.removeChild(toast), 3000);
+      setTimeout(() => {
+        if (document.body.contains(toast)) {
+          document.body.removeChild(toast);
+        }
+      }, 3000);
       
-      // Force a HARD refresh to reload all data
-// In both UserRating.tsx and WatchStatusButtons.tsx
-// Add this delay before reload to ensure the database update completes
-setTimeout(() => {
-  window.location.reload();
-}, 500); // 500ms delay
-    } catch (err) {
+      // Notify parent component of the rating change
+      if (onRatingChange) {
+        onRatingChange(ratingToSet);
+      }
+      
+      // Use Next.js router to refresh data instead of hard page reload
+      router.refresh();
+      
+    } catch (err: any) {
       // Error handling
       setError(err.message);
       console.error('Error updating rating:', err);
@@ -89,6 +107,10 @@ setTimeout(() => {
     <div>
       {error && (
         <div className="mb-3 text-sm text-red-400">{error}</div>
+      )}
+      
+      {success && (
+        <div className="mb-3 text-sm text-green-400">Rating updated successfully!</div>
       )}
       
       <div className="flex flex-wrap justify-between mb-2">
