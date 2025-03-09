@@ -27,11 +27,7 @@ export default function GlobalLoadingProvider({
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     
-    // Set loading true immediately on route change
     setIsLoading(true);
-    
-    // After a short delay, set loading to false
-    // This ensures the animation is visible even for fast page loads
     timeoutId = setTimeout(() => {
       setIsLoading(false);
     }, 800);
@@ -39,14 +35,11 @@ export default function GlobalLoadingProvider({
     return () => clearTimeout(timeoutId);
   }, [pathname, searchParams]);
 
-  // Intercept all fetch requests to show loading state
+  // Intercept fetch requests
   useEffect(() => {
-    // Store the original fetch function
     const originalFetch = window.fetch;
     
-    // Override fetch with our interceptor
     window.fetch = async function(...args) {
-      // Only track API calls, not static assets
       const isApiCall = typeof args[0] === 'string' && 
         (args[0].startsWith('/api/') || args[0].includes('api.'));
       
@@ -56,15 +49,12 @@ export default function GlobalLoadingProvider({
       }
       
       try {
-        // Call the original fetch
         const response = await originalFetch.apply(window, args);
         return response;
       } finally {
         if (isApiCall) {
-          // Decrement pending fetches
           setPendingFetches(count => {
             const newCount = count - 1;
-            // Only set loading to false if no fetches are pending
             if (newCount <= 0) {
               setIsLoading(false);
             }
@@ -74,83 +64,78 @@ export default function GlobalLoadingProvider({
       }
     };
     
-    // Restore original fetch on cleanup
     return () => {
       window.fetch = originalFetch;
     };
   }, []);
 
-  // Combined loading state (route changes, fetch requests, or manual)
   const showLoading = isLoading || pendingFetches > 0 || isManualLoading;
 
   return (
     <LoadingContext.Provider value={{ isLoading: showLoading, setManualLoading: setIsManualLoading }}>
       {children}
-      
       <AnimatePresence>
-        {showLoading && <LoadingAnimation />}
+        {showLoading && <CleanAnimeLoading />}
       </AnimatePresence>
     </LoadingContext.Provider>
   );
 }
 
-function LoadingAnimation() {
+function CleanAnimeLoading() {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center"
     >
-      <div className="relative w-24 h-24">
-        {/* Main rotating ring */}
+      <div className="flex flex-col items-center">
+        {/* Simple logo/text */}
         <motion.div
-          className="absolute inset-0 rounded-full border-4 border-transparent border-t-indigo-500 border-r-purple-500 border-b-violet-600 border-l-fuchsia-500"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1.5, ease: "linear", repeat: Infinity }}
-        />
-        
-        {/* Secondary rotating ring (opposite direction) */}
-        <motion.div
-          className="absolute inset-2 rounded-full border-4 border-transparent border-t-purple-400 border-r-violet-400 border-b-fuchsia-400 border-l-indigo-400"
-          animate={{ rotate: -360 }}
-          transition={{ duration: 2, ease: "linear", repeat: Infinity }}
-        />
-        
-        {/* Pulsing center */}
-        <motion.div 
-          className="absolute inset-0 flex items-center justify-center"
-          initial={{ scale: 0.8, opacity: 0.7 }}
-          animate={{ scale: 1.2, opacity: 1 }}
-          transition={{ duration: 1, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          className="text-purple-300 text-3xl font-medium tracking-widest mb-12"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          style={{ textShadow: '0 0 8px rgba(168, 85, 247, 0.5)' }}
         >
-          <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-violet-500 rounded-full shadow-lg" />
+          ANDWATCH
         </motion.div>
         
-        {/* Orbiting particles */}
-        {[...Array(6)].map((_, i) => (
+        {/* Clean progress bar with subtle anime glow */}
+        <div className="w-64 h-1 bg-gray-800 rounded-full overflow-hidden">
           <motion.div
-            key={i}
-            className="absolute w-3 h-3 bg-white rounded-full shadow-lg"
-            initial={{ 
-              x: 0, 
-              y: 0,
-              opacity: 0 
-            }}
-            animate={{
-              x: [0, Math.cos(i * Math.PI / 3) * 40],
-              y: [0, Math.sin(i * Math.PI / 3) * 40],
-              opacity: [0, 1, 0]
-            }}
-            transition={{
-              duration: 1.5,
+            className="h-full bg-purple-500"
+            initial={{ width: "0%" }}
+            animate={{ width: "100%" }}
+            transition={{ 
+              duration: 2.5, 
               repeat: Infinity,
-              delay: i * 0.2,
-              repeatType: "loop"
+              ease: "easeInOut" 
             }}
+            style={{ boxShadow: '0 0 10px rgba(168, 85, 247, 0.7)' }}
           />
-        ))}
+        </div>
+        
+        {/* Simple status text with anime-style dot animation */}
+        <div className="mt-6 text-white/80 text-sm font-light tracking-wider flex items-center">
+          <span>Loading</span>
+          <motion.span
+            animate={{ opacity: [0, 1, 0] }}
+            transition={{ duration: 1, repeat: Infinity, repeatDelay: 0 }}
+            className="mx-0.5"
+          >.</motion.span>
+          <motion.span
+            animate={{ opacity: [0, 1, 0] }}
+            transition={{ duration: 1, repeat: Infinity, repeatDelay: 0.2 }}
+            className="mx-0.5"
+          >.</motion.span>
+          <motion.span
+            animate={{ opacity: [0, 1, 0] }}
+            transition={{ duration: 1, repeat: Infinity, repeatDelay: 0.4 }}
+            className="mx-0.5"
+          >.</motion.span>
+        </div>
       </div>
     </motion.div>
   );
