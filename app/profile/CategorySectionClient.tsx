@@ -12,7 +12,7 @@ interface MediaItem {
   title: string;
   image: string | null;
   score: number | null;
-  type: "anime" | "movie";
+  type: "anime" | "movie" | "tv";
   year: number | null;
   url: string;
   userRating?: number | null;

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-type MediaType = "anime" | "movie" | "both";
+type MediaType = "anime" | "movie" | "tv" | "both";
 
 interface EmptyStateProps {
   mediaType: MediaType;

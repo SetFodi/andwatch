@@ -9,7 +9,7 @@ const ItemSchema = new Schema({
   },
   type: {
     type: String,
-    enum: ["anime", "movie"],
+    enum: ["anime", "movie", "tv"],
     required: [true, "Type (anime or movie) is required"],
   },
   synopsis: {

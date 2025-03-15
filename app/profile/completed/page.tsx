@@ -4,7 +4,7 @@ import { authOptions } from "../../api/auth/[...nextauth]/route";
 import { notFound, redirect } from "next/navigation";
 import connectDB from "../../../lib/db";
 import { User } from "../../../lib/models/User";
-import { animeApi, movieApi } from "../../../lib/services/api";
+import { animeApi, tmdbApi} from "../../../lib/services/api";
 import ProfileCategoryClient from "../../../components/ProfileCategoryClient";
 
 // Fetch userData with watchlist
@@ -54,13 +54,13 @@ async function processWatchlist(watchlist: any[]) {
           genres: animeDetails.data.genres?.map((g: any) => g.name) || [],
         };
       } else {
-        const movieDetails = await movieApi.getMovieById(item.externalId);
+        const movieDetails = await tmdbApi.getMovieById(item.externalId);
         if (!movieDetails) return null;
         
         return {
           id: item.externalId,
           title: movieDetails.title,
-          image: movieDetails.poster_path ? movieApi.getImageUrl(movieDetails.poster_path) : null,
+          image: movieDetails.poster_path ? tmdbApi.getImageUrl(movieDetails.poster_path) : null,
           score: movieDetails.vote_average,
           type: "movie" as const,
           year: movieDetails.release_date ? new Date(movieDetails.release_date).getFullYear() : null,

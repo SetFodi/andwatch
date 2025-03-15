@@ -10,7 +10,7 @@ const UserWatchItemSchema = new Schema({
   },
   mediaType: {
     type: String,
-    enum: ["anime", "movie"],
+    enum: ["anime", "movie", "tv"],
     required: true
   },
   userRating: {

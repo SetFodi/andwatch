@@ -24,7 +24,7 @@ const ReviewSchema = new Schema<ReviewDocument>({
   },
   mediaType: {
     type: String,
-    enum: ["anime", "movie"],
+    enum: ["anime", "movie", "tv"],
     required: true,
   },
   title: {

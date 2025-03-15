@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 
 interface UserRatingProps {
   itemId: string;
-  mediaType: 'anime' | 'movie';
+  mediaType: 'anime' | 'movie' | 'tv';  // Add 'tv' here
   currentRating: number | null;
   colorTheme?: 'blue' | 'red';
   onRatingChange?: (newRating: number | null) => void;
 }
+
 
 export default function UserRating({
   itemId,

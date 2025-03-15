@@ -60,7 +60,7 @@ const watchStatusOptions = [
 
 interface WatchStatusButtonsProps {
   itemId: string;
-  mediaType: 'anime' | 'movie';
+  mediaType: 'anime' | 'movie' | 'tv';  // Add 'tv' here
   currentStatus: string | null;
   colorTheme?: 'blue' | 'red';
   onStatusChange?: (newStatus: string | null) => void;

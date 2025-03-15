@@ -223,7 +223,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                     itemId={resolvedParams.id}
                     mediaType="tv"
                     currentStatus={userWatchItem?.status || null}
-                    colorTheme="blue"
                   />
                   <div className="mt-6 pt-6 border-t border-gray-700">
                     <h4 className="font-bold text-white mb-3 flex items-center">
@@ -236,7 +235,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                       itemId={resolvedParams.id}
                       mediaType="tv"
                       currentRating={userWatchItem?.userRating || null}
-                      colorTheme="blue"
+                
                     />
                   </div>
                 </div>
