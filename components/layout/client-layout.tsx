@@ -65,14 +65,14 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center">
-            <div className="flex items-center space-x-1 bg-gray-900/50 rounded-xl p-1 border border-gray-800/30">
-              <NavLink href="/anime" icon={<AnimeIcon />} label="Anime" />
-              <NavLink href="/movies" icon={<MovieIcon />} label="Movies" />
-              <NavLink href="/about" icon={<AboutIcon />} label="About" />
-            </div>
-          </nav>
+  <div className="flex items-center space-x-1 bg-gray-900/50 rounded-xl p-1 border border-gray-800/30">
+    <NavLink href="/anime" icon={<AnimeIcon />} label="Anime" />
+    <NavLink href="/movies" icon={<MovieIcon />} label="Movies" />
+    <NavLink href="/tvshows" icon={<TVIcon />} label="TV Shows" />
+    <NavLink href="/about" icon={<AboutIcon />} label="About" />
+  </div>
+</nav>
 
           {/* User Section */}
           <div className="flex items-center space-x-4">
@@ -172,18 +172,18 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
 
       {/* Mobile Navigation Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-gray-800/50 bg-black/90 backdrop-blur-md z-50">
-        <div className="grid grid-cols-5 h-16">
-          <MobileNavLink href="/" icon={<HomeIcon />} label="Home" />
-          <MobileNavLink href="/anime" icon={<AnimeIcon />} label="Anime" />
-          <MobileNavLink href="/movies" icon={<MovieIcon />} label="Movies" />
-          <MobileNavLink href="/about" icon={<AboutIcon />} label="About" />
-          <MobileNavLink 
-            href={status === "authenticated" ? "/profile" : "/auth/signin"} 
-            icon={status === "authenticated" ? <ProfileIcon /> : <SignInIcon />} 
-            label={status === "authenticated" ? "Profile" : "Sign In"} 
-          />
-        </div>
-      </div>
+  <div className="grid grid-cols-5 h-16">
+    <MobileNavLink href="/" icon={<HomeIcon />} label="Home" />
+    <MobileNavLink href="/anime" icon={<AnimeIcon />} label="Anime" />
+    <MobileNavLink href="/movies" icon={<MovieIcon />} label="Movies" />
+    <MobileNavLink href="/tvshows" icon={<TVIcon />} label="TV Shows" />
+    <MobileNavLink 
+      href={status === "authenticated" ? "/profile" : "/auth/signin"} 
+      icon={status === "authenticated" ? <ProfileIcon /> : <SignInIcon />} 
+      label={status === "authenticated" ? "Profile" : "Sign In"} 
+    />
+  </div>
+</div>
 
       {/* Add bottom padding on mobile for the fixed navigation */}
       <main className="flex-1 md:pb-0 pb-16">
@@ -313,7 +313,13 @@ function HomeIcon() {
     </svg>
   );
 }
-
+function TVIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 20h12M9 16h6M4 4h16v12H4z" />
+    </svg>
+  );
+}
 function AnimeIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

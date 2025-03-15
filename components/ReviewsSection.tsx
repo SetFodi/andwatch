@@ -229,7 +229,7 @@ export default function ReviewsSection({
               href="/auth/signin"
               className={`inline-block px-6 py-3 ${theme.primary} text-white rounded-lg font-medium transition-colors`}
             >
-              Sign in to write a review
+              <p className="text-white">Sign in to write a review</p>
             </Link>
           ) : (
             <button

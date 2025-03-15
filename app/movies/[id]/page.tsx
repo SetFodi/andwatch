@@ -1,7 +1,7 @@
 // app/movies/[id]/page.tsx
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../api/auth/[...nextauth]/route";
-import { movieApi } from "../../../lib/services/api";
+import { tmdbApi } from "../../../lib/services/api"; // Already correct
 import { notFound } from "next/navigation";
 import connectDB from "../../../lib/db";
 import { User } from "../../../lib/models/User";
@@ -34,7 +34,7 @@ function getGenreColor(genreId: number) {
 
 async function getMovieDetails(id: string) {
   try {
-    const data = await movieApi.getMovieById(id);
+    const data = await tmdbApi.getMovieById(id); // Changed from movieApi
     if (!data || data.success === false) {
       return null;
     }
@@ -115,7 +115,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         <div className="absolute inset-0 overflow-hidden z-0">
           {movie.backdrop_path ? (
             <Image
-              src={movieApi.getImageUrl(movie.backdrop_path) || ''}
+              src={tmdbApi.getImageUrl(movie.backdrop_path) || ''} // Changed from movieApi
               alt={movie.title}
               fill
               className="object-cover opacity-20"
@@ -150,7 +150,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 {movie.poster_path ? (
                   <div className="aspect-[2/3] relative">
                     <Image 
-                      src={movieApi.getImageUrl(movie.poster_path) || ''}
+                      src={tmdbApi.getImageUrl(movie.poster_path) || ''} // Changed from movieApi
                       alt={movie.title}
                       fill
                       className="object-cover"
@@ -349,7 +349,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                         <div className="w-10 h-10 bg-gray-700 rounded-full overflow-hidden relative">
                           {director.profile_path ? (
                             <Image
-                              src={movieApi.getImageUrl(director.profile_path) || ''}
+                              src={tmdbApi.getImageUrl(director.profile_path) || ''} // Changed from movieApi
                               alt={director.name}
                               fill
                               className="object-cover"
@@ -381,7 +381,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                               <div className="w-16 h-20 relative">
                                 {person.profile_path ? (
                                   <Image
-                                    src={movieApi.getImageUrl(person.profile_path) || ''}
+                                    src={tmdbApi.getImageUrl(person.profile_path) || ''} // Changed from movieApi
                                     alt={person.name}
                                     fill
                                     className="object-cover"
@@ -427,7 +427,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                               {similarMovie.poster_path ? (
                                 <>
                                   <Image
-                                    src={movieApi.getImageUrl(similarMovie.poster_path) || ''}
+                                    src={tmdbApi.getImageUrl(similarMovie.poster_path) || ''} // Changed from movieApi
                                     alt={similarMovie.title}
                                     fill
                                     className="object-cover"
@@ -509,7 +509,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 itemId={resolvedParams.id}
                 mediaType="movie"
                 itemTitle={movie.title}
-                itemImage={movie.poster_path ? movieApi.getImageUrl(movie.poster_path) || undefined : undefined}
+                itemImage={movie.poster_path ? tmdbApi.getImageUrl(movie.poster_path) || undefined : undefined} // Changed from movieApi
                 session={!!session}
                 userId={session?.user?.id}
                 colorTheme="red"
