@@ -154,15 +154,15 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
               <div className="flex items-center space-x-3">
                 <Link
                   href="/auth/signin"
-                  className="text-sm px-4 py-2 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700/30 hover:border-indigo-500/50 text-gray-300 hover:text-white transition-all duration-200"
+                  className="text-sm px-4 py-2 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700/30 hover:border-indigo-500/50 text-white hover:text-white transition-all duration-200"
                 >
-                  Sign In
+          <p className="text-white">Sign In</p>
                 </Link>
                 <Link
                   href="/auth/signup"
                   className="hidden sm:flex text-sm px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md hover:shadow-indigo-500/20 transition-all duration-200"
                 >
-                  Sign Up
+                  <p className="text-white">Sign Up</p>
                 </Link>
               </div>
             )}
