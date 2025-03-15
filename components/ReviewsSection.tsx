@@ -7,12 +7,12 @@ import ReviewModal from "./ReviewModal";
 
 interface ReviewsSectionProps {
   itemId: string;
-  mediaType: "anime" | "movie";
+  mediaType: "anime" | "movie" | "tv"; // Added "tv"
   itemTitle: string;
   itemImage?: string | null;
   session: boolean;
-  userId?: string;
-  colorTheme?: "indigo" | "red";
+  userId?: string | null; // Allow null explicitly
+  colorTheme?: "indigo" | "red" | "blue"; // Added "blue" for TV shows
 }
 
 export default function ReviewsSection({
@@ -42,6 +42,11 @@ export default function ReviewsSection({
       secondary: "text-red-400",
       icon: "text-red-400",
     },
+    blue: {
+      primary: "bg-blue-600 hover:bg-blue-700",
+      secondary: "text-blue-400",
+      icon: "text-blue-400",
+    },
   };
 
   const theme = colors[colorTheme];
@@ -60,7 +65,8 @@ export default function ReviewsSection({
         }
         
         const data = await response.json();
-        setReviews(data);
+        console.log("Fetched reviews:", data); // Debug log
+        setReviews(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error fetching reviews:", err);
         setError("Failed to load reviews. Please try again later.");
@@ -90,7 +96,7 @@ export default function ReviewsSection({
       }
       
       // Remove the deleted review from the state
-      setReviews(reviews.filter(review => review.id !== reviewId));
+      setReviews(reviews.filter((review) => review.id !== reviewId));
     } catch (err) {
       console.error("Error deleting review:", err);
       setError("Failed to delete review. Please try again later.");
@@ -104,22 +110,29 @@ export default function ReviewsSection({
   };
 
   // Calculate average rating
-  const averageRating = reviews.length > 0
-    ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
-    : "N/A";
+  const averageRating =
+    reviews.length > 0
+      ? (
+          reviews.reduce((sum, review) => sum + (review.rating || 0), 0) /
+          reviews.length
+        ).toFixed(1)
+      : "N/A";
 
   return (
     <div className="bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 border border-gray-700 shadow-xl mb-8">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-bold text-white flex items-center">
-          <svg className="w-5 h-5 mr-2 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
+          <svg className={`w-5 h-5 mr-2 ${theme.icon}`} fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M18 13V5a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h3l3 3 3-3h3a2 2 0 002-2zM5 7a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H6z"
               clipRule="evenodd"
             />
           </svg>
-          User Reviews {reviews.length > 0 && <span className="ml-2 text-base text-gray-400">({reviews.length})</span>}
+          User Reviews{" "}
+          {reviews.length > 0 && (
+            <span className="ml-2 text-base text-gray-400">({reviews.length})</span>
+          )}
         </h3>
 
         <div className="flex items-center space-x-3">
@@ -129,7 +142,7 @@ export default function ReviewsSection({
               onClick={() => setIsModalOpen(true)}
               className={`px-4 py-2 ${theme.primary} text-white rounded-lg text-sm font-medium transition-colors`}
             >
-              {reviews.some(review => review.user.id === userId)
+              {reviews.some((review) => review.user?.id === userId)
                 ? "Edit Your Review"
                 : "Write a Review"}
             </button>
@@ -140,7 +153,12 @@ export default function ReviewsSection({
             <div className="relative group">
               <button className="flex items-center text-sm text-gray-400 hover:text-white px-3 py-1.5 bg-gray-800 rounded-lg transition-colors">
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+                  />
                 </svg>
                 {sortOrder === "recent" ? "Most Recent" : "Highest Rated"}
                 <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,13 +168,17 @@ export default function ReviewsSection({
               <div className="absolute right-0 mt-1 w-40 bg-gray-900 border border-gray-800 rounded-lg shadow-xl invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 z-10">
                 <button
                   onClick={() => setSortOrder("recent")}
-                  className={`w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded-t-lg ${sortOrder === "recent" ? "bg-gray-800" : ""}`}
+                  className={`w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded-t-lg ${
+                    sortOrder === "recent" ? "bg-gray-800" : ""
+                  }`}
                 >
                   Most Recent
                 </button>
                 <button
                   onClick={() => setSortOrder("rating")}
-                  className={`w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded-b-lg ${sortOrder === "rating" ? "bg-gray-800" : ""}`}
+                  className={`w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded-b-lg ${
+                    sortOrder === "rating" ? "bg-gray-800" : ""
+                  }`}
                 >
                   Highest Rated
                 </button>
@@ -250,7 +272,7 @@ export default function ReviewsSection({
             <div className="flex items-center">
               <div className="w-12 h-12 flex items-center justify-center bg-gray-700 rounded-full">
                 <svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3 .921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784 .57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81 .588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
               </div>
               <div className="ml-4">
@@ -263,8 +285,7 @@ export default function ReviewsSection({
                 </p>
               </div>
             </div>
-            
-            {/* Rating distribution would go here if needed */}
+            {/* Rating distribution could be added here */}
           </div>
 
           {/* Review cards */}
@@ -273,7 +294,7 @@ export default function ReviewsSection({
               <ReviewCard
                 key={review.id}
                 review={review}
-                isCurrentUser={userId === review.user.id}
+                isCurrentUser={userId === (review.user?.id || "")} // Safely handle missing user
                 colorTheme={colorTheme}
                 onEdit={() => handleEditReview(review)}
                 onDelete={() => handleDeleteReview(review.id)}

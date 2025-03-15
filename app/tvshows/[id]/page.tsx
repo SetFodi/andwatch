@@ -11,21 +11,25 @@ import WatchStatusButtons from "../../../components/WatchStatusButtons";
 import UserRating from "../../../components/UserRating";
 import ReviewsSection from "@/components/ReviewsSection";
 
+// Replace the tvGenres array with this improved version
 const tvGenres = [
-  { id: 10759, name: "Action & Adventure", color: "from-red-600 to-rose-500" },
-  { id: 16, name: "Animation", color: "from-blue-500 to-sky-400" },
-  { id: 35, name: "Comedy", color: "from-yellow-500 to-amber-400" },
-  { id: 80, name: "Crime", color: "from-slate-800 to-gray-700" },
-  { id: 18, name: "Drama", color: "from-purple-600 to-violet-500" },
-  { id: 10751, name: "Family", color: "from-emerald-600 to-teal-500" },
-  { id: 9648, name: "Mystery", color: "from-indigo-800 to-blue-700" },
-  { id: 10765, name: "Sci-Fi & Fantasy", color: "from-cyan-600 to-blue-500" },
-  { id: 10768, name: "War & Politics", color: "from-amber-900 to-yellow-800" },
+  { id: 10759, name: "Action & Adventure", color: "bg-red-600", textColor: "text-white font-semibold" },
+  { id: 16, name: "Animation", color: "bg-blue-500", textColor: "text-red font-semibold" },
+  { id: 35, name: "Comedy", color: "bg-yellow-500", textColor: "text-black font-bold" },
+  { id: 80, name: "Crime", color: "bg-slate-800", textColor: "text-white font-semibold" },
+  { id: 18, name: "Drama", color: "bg-purple-600", textColor: "text-white font-semibold" },
+  { id: 10751, name: "Family", color: "bg-emerald-600", textColor: "text-white font-semibold" },
+  { id: 9648, name: "Mystery", color: "bg-indigo-800", textColor: "text-white font-semibold" },
+  { id: 10765, name: "Sci-Fi & Fantasy", color: "bg-cyan-600", textColor: "text-white font-semibold" },
+  { id: 10768, name: "War & Politics", color: "bg-amber-800", textColor: "text-white font-semibold" },
 ];
 
-function getGenreColor(genreId: number) {
+function getGenreStyles(genreId) {
   const genre = tvGenres.find((g) => g.id === genreId);
-  return genre?.color || "from-gray-700 to-gray-600";
+  return {
+    bgColor: genre?.color || "bg-gray-700",
+    textColor: genre?.textColor || "text-white font-semibold"
+  };
 }
 
 async function getTVShowDetails(id: string) {
@@ -85,7 +89,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     : "Unknown";
 
   const primaryGenreId = tvShow.genres?.[0]?.id;
-  const genreColorClass = primaryGenreId ? getGenreColor(primaryGenreId) : "from-gray-700 to-gray-600";
+  const genreColorClass = primaryGenreId ? getGenreStyles(primaryGenreId) : "from-gray-700 to-gray-600";
 
   const formatEpisodeRuntime = (runtimes: number[]) => {
     if (!runtimes || runtimes.length === 0) return "N/A";
@@ -244,17 +248,18 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-2">{tvShow.name}</h1>
                 {tvShow.tagline && <h2 className="text-2xl text-gray-400 mb-3 italic">"{tvShow.tagline}"</h2>}
                 <div className="flex flex-wrap gap-2 mb-6">
-                  {tvShow.genres?.map((genre: any) => (
-                    <Link
-                      key={genre.id}
-                      href={`/tvshows?genre=${genre.id}`}
-                      className={`px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r ${getGenreColor(
-                        genre.id
-                      )} text-white transition-all duration-200 hover:shadow-lg`}
-                    >
-                      {genre.name}
-                    </Link>
-                  ))}
+{tvShow.genres?.map((genre) => {
+  const { bgColor, textColor } = getGenreStyles(genre.id);
+  return (
+    <Link
+      key={genre.id}
+      href={`/tvshows?genre=${genre.id}`}
+      className={`px-4 py-2 rounded-full text-sm ${bgColor} ${textColor} transition-all hover:opacity-90 inline-block shadow-md`}
+    >
+      {genre.name}
+    </Link>
+  );
+})}
                 </div>
               </div>
 
@@ -397,7 +402,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                         href="/tvshows"
                         className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
                       >
-                        Discover More TV Shows
+                        <p className="text-white">Discover More TV Shows</p>
                       </Link>
                     </div>
                   </div>
@@ -437,12 +442,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 </div>
               )}
 
-              {/* Updated ReviewsSection call */}
               <ReviewsSection
                 itemId={resolvedParams.id}
                 mediaType="tv"
                 itemTitle={tvShow.name}
-                itemImage={tvShow.poster_path ? tmdbApi.getImageUrl(tvShow.poster_path) : null} // Changed to null instead of undefined
+                itemImage={tvShow.poster_path ? tmdbApi.getImageUrl(tvShow.poster_path) : null}
                 session={!!session}
                 userId={session?.user?.id || null}
                 colorTheme="blue"

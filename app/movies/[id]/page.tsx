@@ -11,25 +11,25 @@ import WatchStatusButtons from "../../../components/WatchStatusButtons";
 import UserRating from "../../../components/UserRating";
 import ReviewsSection from "@/components/ReviewsSection";
 
-// Custom movie genres with associated colors
 const movieGenres = [
-  { id: 28, name: "Action", color: "from-red-600 to-rose-500" },
-  { id: 12, name: "Adventure", color: "from-amber-600 to-yellow-500" },
-  { id: 16, name: "Animation", color: "from-blue-500 to-sky-400" },
-  { id: 35, name: "Comedy", color: "from-yellow-500 to-amber-400" },
-  { id: 80, name: "Crime", color: "from-slate-800 to-gray-700" },
-  { id: 18, name: "Drama", color: "from-purple-600 to-violet-500" },
-  { id: 14, name: "Fantasy", color: "from-emerald-600 to-teal-500" },
-  { id: 27, name: "Horror", color: "from-gray-900 to-black" },
-  { id: 9648, name: "Mystery", color: "from-indigo-800 to-blue-700" },
-  { id: 10749, name: "Romance", color: "from-pink-600 to-rose-500" },
-  { id: 878, name: "Sci-Fi", color: "from-cyan-600 to-blue-500" },
-  { id: 53, name: "Thriller", color: "from-amber-900 to-yellow-800" },
+  { id: 28, name: "Action", color: "from-red-500 to-rose-400", textColor: "text-white" },
+  { id: 12, name: "Adventure", color: "from-amber-500 to-yellow-400", textColor: "text-gray-800" },
+  { id: 16, name: "Animation", color: "from-blue-400 to-sky-300", textColor: "text-gray-800" },
+  { id: 35, name: "Comedy", color: "from-yellow-400 to-amber-300", textColor: "text-gray-800" },
+  { id: 80, name: "Crime", color: "from-slate-500 to-gray-400", textColor: "text-white" },
+  { id: 18, name: "Drama", color: "from-purple-500 to-violet-400", textColor: "text-white" },
+  { id: 14, name: "Fantasy", color: "from-emerald-500 to-teal-400", textColor: "text-white" },
+  { id: 27, name: "Horror", color: "from-gray-600 to-gray-500", textColor: "text-white" },
+  { id: 9648, name: "Mystery", color: "from-indigo-500 to-blue-400", textColor: "text-white" },
+  { id: 10749, name: "Romance", color: "from-pink-500 to-rose-400", textColor: "text-white" },
+  { id: 878, name: "Sci-Fi", color: "from-cyan-500 to-blue-400", textColor: "text-white" },
+  { id: 53, name: "Thriller", color: "from-amber-500 to-yellow-400", textColor: "text-gray-800" },
 ];
 
+// Then modify the getGenreColor function to return both colors
 function getGenreColor(genreId: number) {
   const genre = movieGenres.find(g => g.id === genreId);
-  return genre?.color || "from-red-600 to-rose-600";
+  return genre ? { bgColor: genre.color, textColor: genre.textColor } : { bgColor: "from-red-600 to-rose-600", textColor: "text-white" };
 }
 
 async function getMovieDetails(id: string) {
@@ -297,23 +297,23 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                   <h2 className="text-2xl text-gray-400 mb-3 italic">"{movie.tagline}"</h2>
                 )}
                 
-                {/* Genre Tags */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {movie.genres?.map((genre: any) => {
-                    const genreColor = getGenreColor(genre.id);
-                    return (
-                      <Link 
-                        key={genre.id} 
-                        href={`/movies?genre=${genre.id}`}
-                        className={`px-4 py-2 rounded-full text-sm font-medium 
-                                  bg-gradient-to-r ${genreColor} text-white
-                                  transition-all duration-200 hover:shadow-lg`}
-                      >
-                        {genre.name}
-                      </Link>
-                    );
-                  })}
-                </div>
+{/* Genre Tags */}
+<div className="flex flex-wrap gap-2 mb-6">
+{movie.genres?.map((genre: any) => {
+  const { bgColor, textColor } = getGenreColor(genre.id);
+  return (
+    <Link 
+      key={genre.id} 
+      href={`/movies?genre=${genre.id}`}
+      className={`px-4 py-2 rounded-full text-sm font-medium 
+                bg-gradient-to-r ${bgColor} ${textColor}
+                transition-all duration-200 hover:shadow-lg`}
+    >
+      {genre.name}
+    </Link>
+  );
+})}
+</div>
               </div>
               
               {/* Synopsis */}

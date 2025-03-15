@@ -2,26 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Fira+Code&display=swap');
 
 /* Custom CSS Variables */
-:root {
-  --background: #0f172a; /* Deeper navy blue base */
-  --foreground: #f1f5f9; /* Light gray for primary text */
-  --gray-900: #1e293b; /* Darker gray for gradients */
-  --gray-800: #334155; /* Medium gray for cards and inactive states */
-  --gray-700: #475569; /* Subtle gray for borders */
-  --gray-600: #64748b; /* Gray for secondary text */
-  --gray-500: #94a3b8; /* Light gray for accents and secondary text */
-  --gray-400: #cbd5e1; /* Lighter gray for text on dark buttons */
-  --gray-300: #d1d5db; /* Very light gray for text */
-  --indigo-700: #4338ca; /* Brighter indigo for active states */
-  --indigo-600: #4c51bf; /* Softer indigo */
-  --indigo-500: #6366f1; /* Default indigo */
-  --indigo-400: #818cf8; /* Lighter indigo */
-  --indigo-300: #a5b4fc; /* Very light indigo */
-  --teal-600: #2dd4bf; /* Teal for accents */
-  --teal-500: #14b8a6; /* Default teal */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-  --font-mono: "Fira Code", "Courier New", monospace;
-}
+
 
 /* Dark Mode (matches desired dark theme) */
 @media (prefers-color-scheme: dark) {
