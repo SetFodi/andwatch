@@ -2,7 +2,7 @@
 /**
  * This file contains services for external API integrations
  * - Jikan API for anime data (unofficial MyAnimeList API)
- * - TMDB API for movie data
+ * - TMDB API for movie and TV show data
  */
 
 // Base API URLs
@@ -13,7 +13,6 @@ const TMDB_API_KEY = process.env.TMDB_API_KEY || "bcea2ce0136ad9c471dd680822fdfd
 
 // Anime API (Jikan/MyAnimeList)
 export const animeApi = {
-  // Search anime
   async searchAnime(query: string, page = 1) {
     const response = await fetch(
       `${JIKAN_BASE_URL}/anime?q=${encodeURIComponent(query)}&page=${page}&limit=20`,
@@ -22,7 +21,6 @@ export const animeApi = {
     return await response.json();
   },
 
-  // Get seasonal anime
   async getSeasonalAnime(year = new Date().getFullYear(), season = getCurrentSeason()) {
     const response = await fetch(
       `${JIKAN_BASE_URL}/seasons/${year}/${season}`,
@@ -31,7 +29,6 @@ export const animeApi = {
     return await response.json();
   },
 
-  // Get top anime
   async getTopAnime(page = 1) {
     const response = await fetch(
       `${JIKAN_BASE_URL}/top/anime?page=${page}&limit=20`,
@@ -40,7 +37,6 @@ export const animeApi = {
     return await response.json();
   },
 
-  // Get anime by ID
   async getAnimeById(id: string | number) {
     const response = await fetch(
       `${JIKAN_BASE_URL}/anime/${id}/full`,
@@ -49,7 +45,6 @@ export const animeApi = {
     return await response.json();
   },
 
-  // Get anime by genre
   async getAnimeByGenre(genreId: number, page = 1) {
     const response = await fetch(
       `${JIKAN_BASE_URL}/anime?genres=${genreId}&page=${page}&limit=20`,
@@ -59,64 +54,54 @@ export const animeApi = {
   },
 };
 
-export const movieApi = {
+// TMDB API (Movies and TV Shows)
+export const tmdbApi = {
+  // Movies
   async getMovieById(id: string | number) {
     try {
       const response = await fetch(
         `${TMDB_BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}&append_to_response=credits,similar,videos`,
         { next: { revalidate: 86400 } }
       );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch movie details: ${response.statusText}`);
-      }
-
+      if (!response.ok) throw new Error(`Failed to fetch movie: ${response.statusText}`);
       return await response.json();
     } catch (error) {
       console.error("Error fetching movie details:", error);
-      return null; // Return null if an error occurs
+      return null;
     }
   },
 
-  // Get popular movies
   async getPopularMovies(page = 1) {
     const response = await fetch(
       `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&page=${page}`,
-      { next: { revalidate: 86400 } } // Cache for 1 day
+      { next: { revalidate: 86400 } }
     );
     return await response.json();
   },
 
-  // Get top rated movies
   async getTopRatedMovies(page = 1) {
     const response = await fetch(
       `${TMDB_BASE_URL}/movie/top_rated?api_key=${TMDB_API_KEY}&page=${page}`,
-      { next: { revalidate: 86400 } } // Cache for 1 day
+      { next: { revalidate: 86400 } }
     );
     return await response.json();
   },
 
-  // Get movies by genre
   async getMoviesByGenre(genreId: number, page = 1) {
     const response = await fetch(
       `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}`,
-      { next: { revalidate: 86400 } } // Cache for 1 day
+      { next: { revalidate: 86400 } }
     );
     return await response.json();
   },
 
-  // Search movies
   async searchMovies(query: string, page = 1) {
     try {
       const response = await fetch(
         `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
         { next: { revalidate: 3600 } }
       );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}, ${await response.text()}`);
-      }
-
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     } catch (error) {
       console.error("TMDB searchMovies error:", error);
@@ -124,7 +109,60 @@ export const movieApi = {
     }
   },
 
-  // Helper function to get full image URL
+  // TV Shows
+  async getTVShowById(id: string | number) {
+    try {
+      const response = await fetch(
+        `${TMDB_BASE_URL}/tv/${id}?api_key=${TMDB_API_KEY}&append_to_response=credits,similar,videos`,
+        { next: { revalidate: 86400 } }
+      );
+      if (!response.ok) throw new Error(`Failed to fetch TV show: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching TV show details:", error);
+      return null;
+    }
+  },
+
+  async getPopularTVShows(page = 1) {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/tv/popular?api_key=${TMDB_API_KEY}&page=${page}`,
+      { next: { revalidate: 86400 } }
+    );
+    return await response.json();
+  },
+
+  async getTopRatedTVShows(page = 1) {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/tv/top_rated?api_key=${TMDB_API_KEY}&page=${page}`,
+      { next: { revalidate: 86400 } }
+    );
+    return await response.json();
+  },
+
+  async getTVShowsByGenre(genreId: number, page = 1) {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}`,
+      { next: { revalidate: 86400 } }
+    );
+    return await response.json();
+  },
+
+  async searchTVShows(query: string, page = 1) {
+    try {
+      const response = await fetch(
+        `${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
+        { next: { revalidate: 3600 } }
+      );
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      console.error("TMDB searchTVShows error:", error);
+      return { results: [], page: 1, total_pages: 1 };
+    }
+  },
+
+  // Helper function for image URLs
   getImageUrl(path: string | null) {
     if (!path) return null;
     return `${TMDB_IMAGE_BASE_URL}${path}`;
