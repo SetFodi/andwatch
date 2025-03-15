@@ -1,28 +1,31 @@
 // app/search/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { animeApi, movieApi } from "../../lib/services/api";
+import { animeApi, tmdbApi } from "../../lib/services/api";
 import Link from "next/link";
 import Image from "next/image";
 
 type SearchResult = {
   id: number | string;
   title: string;
-  type: "anime" | "movies";
+  type: "anime" | "movies" | "tv";
   image?: string;
   overview?: string;
 };
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
-  const [mediaType, setMediaType] = useState<"anime" | "movies" | "">("");
+  const [mediaType, setMediaType] = useState<"anime" | "movies" | "tv">("anime");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Use a ref to keep track of the latest search request
+  const latestSearchRef = useRef<string>("");
 
-  // Animation variants for the search bar
+  // Animation variants
   const searchBarVariants = {
     hidden: { opacity: 0, y: -50, scale: 0.95 },
     visible: {
@@ -33,7 +36,6 @@ export default function SearchPage() {
     },
   };
 
-  // Animation variants for results
   const resultVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i: number) => ({
@@ -43,8 +45,12 @@ export default function SearchPage() {
     }),
   };
 
-  // Search function
-  const performSearch = async (searchQuery: string, type: "anime" | "movies" | "") => {
+  // Improved search function with request ID to prevent race conditions
+  const performSearch = async (searchQuery: string, type: "anime" | "movies" | "tv") => {
+    // Generate a unique ID for this search request
+    const searchRequestId = Date.now().toString();
+    latestSearchRef.current = searchRequestId;
+    
     if (!searchQuery.trim()) {
       setResults([]);
       setError(null);
@@ -53,58 +59,83 @@ export default function SearchPage() {
 
     setIsLoading(true);
     setError(null);
+    
     try {
-      let animeResults = [];
-      let movieResults = [];
+      let results: SearchResult[] = [];
 
-      // Search anime if selected or all
-      if (!type || type === "anime") {
+      // Search based on selected type only
+      if (type === "anime" && latestSearchRef.current === searchRequestId) {
         const animeData = await animeApi.searchAnime(searchQuery, 1);
-        animeResults = animeData.data?.map((item: any) => ({
+        
+        // Check if this is still the latest search request
+        if (latestSearchRef.current !== searchRequestId) return;
+        
+        results = animeData.data?.map((item: any) => ({
           id: item.mal_id,
           title: item.title,
           type: "anime" as const,
           image: item.images?.jpg?.large_image_url || item.images?.jpg?.image_url,
           overview: item.synopsis,
         })) || [];
-        console.log("Anime results:", animeResults);
       }
 
-      // Search movies if selected or all
-      if (!type || type === "movies") {
-        const movieData = await movieApi.searchMovies(searchQuery, 1);
-        console.log("Movie API response:", movieData);
+      if (type === "movies" && latestSearchRef.current === searchRequestId) {
+        const movieData = await tmdbApi.searchMovies(searchQuery, 1);
+        
+        // Check if this is still the latest search request
+        if (latestSearchRef.current !== searchRequestId) return;
+        
         if (movieData.results && Array.isArray(movieData.results)) {
-          movieResults = movieData.results.map((item: any) => ({
+          results = movieData.results.map((item: any) => ({
             id: item.id,
             title: item.title,
             type: "movies" as const,
-            image: movieApi.getImageUrl(item.poster_path),
+            image: tmdbApi.getImageUrl(item.poster_path),
             overview: item.overview,
           }));
-        } else {
-          console.warn("Movie API returned no valid results:", movieData);
-          movieResults = [];
         }
-        console.log("Movie results:", movieResults);
       }
 
-      const combinedResults = [...animeResults, ...movieResults].slice(0, 10); // Limit to 10 results
-      if (combinedResults.length === 0) {
-        setError("No results found for your query.");
-      } else {
-        setResults(combinedResults);
+      if (type === "tv" && latestSearchRef.current === searchRequestId) {
+        const tvData = await tmdbApi.searchTVShows(searchQuery, 1);
+        
+        // Check if this is still the latest search request
+        if (latestSearchRef.current !== searchRequestId) return;
+        
+        if (tvData.results && Array.isArray(tvData.results)) {
+          results = tvData.results.map((item: any) => ({
+            id: item.id,
+            title: item.name,
+            type: "tv" as const,
+            image: tmdbApi.getImageUrl(item.poster_path),
+            overview: item.overview,
+          }));
+        }
       }
+
+      // Final check to ensure this is still the most recent search
+      if (latestSearchRef.current === searchRequestId) {
+        const limitedResults = results.slice(0, 10);
+        setResults(limitedResults);
+        setError(limitedResults.length === 0 ? "No results found for your query." : null);
+      }
+      
     } catch (err: any) {
-      console.error("Search error details:", err);
-      setError(`Failed to fetch search results. Please try again. Details: ${err.message}`);
-      setResults([]);
+      // Only set error if this is still the latest search
+      if (latestSearchRef.current === searchRequestId) {
+        console.error("Search error:", err);
+        setError(`Error searching for ${type}. Please try again.`);
+        setResults([]);
+      }
     } finally {
-      setIsLoading(false);
+      // Only update loading state if this is still the latest search
+      if (latestSearchRef.current === searchRequestId) {
+        setIsLoading(false);
+      }
     }
   };
 
-  // Debounce function to delay API calls while typing
+  // Improved debounce with longer delay
   const debounce = (func: Function, delay: number) => {
     let timeoutId: NodeJS.Timeout;
     return (...args: any[]) => {
@@ -115,14 +146,20 @@ export default function SearchPage() {
     };
   };
 
-  // Create a debounced version of the search function
-  const debouncedSearch = debounce((searchQuery: string, type: "anime" | "movies" | "") => {
+  // Create a debounced search with longer delay
+  const debouncedSearch = debounce((searchQuery: string, type: "anime" | "movies" | "tv") => {
     performSearch(searchQuery, type);
-  }, 500); // 500ms delay
+  }, 750); // Increased from 500ms to 750ms for more stability
 
   // Effect to trigger search when query or mediaType changes
   useEffect(() => {
-    debouncedSearch(query, mediaType);
+    if (query.trim()) {
+      debouncedSearch(query, mediaType);
+    } else {
+      setResults([]);
+      setError(null);
+      setIsLoading(false);
+    }
   }, [query, mediaType]);
 
   return (
@@ -139,12 +176,12 @@ export default function SearchPage() {
             {/* Filter Dropdown */}
             <select
               value={mediaType}
-              onChange={(e) => setMediaType(e.target.value as "anime" | "movies" | "")}
+              onChange={(e) => setMediaType(e.target.value as "anime" | "movies" | "tv")}
               className="w-full sm:w-auto bg-gray-800/50 border border-gray-700/50 rounded-lg px-4 py-2 text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
             >
-              <option value="">All</option>
               <option value="anime">Anime</option>
               <option value="movies">Movies</option>
+              <option value="tv">TV Shows</option>
             </select>
 
             {/* Search Input */}
@@ -153,7 +190,7 @@ export default function SearchPage() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search for anime or movies..."
+                placeholder={`Search for ${mediaType}...`}
                 className="w-full bg-transparent text-white text-xl placeholder-gray-500 border-none focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-xl py-3 px-6 transition-all duration-300"
               />
               {isLoading && (
@@ -169,11 +206,9 @@ export default function SearchPage() {
         </div>
       </motion.div>
 
-      {/* Results Section */}
+      {/* Results Section - Removed the global loading message */}
       <div className="mt-12 w-full max-w-4xl">
-        {isLoading && query.trim() !== "" && results.length === 0 ? (
-          <div className="text-gray-400 text-center text-lg">Searching...</div>
-        ) : error ? (
+        {error && query.trim() !== "" ? (
           <div className="text-red-400 text-center text-lg">{error}</div>
         ) : results.length > 0 ? (
           <motion.div
@@ -213,7 +248,7 @@ export default function SearchPage() {
               </motion.div>
             ))}
           </motion.div>
-        ) : query.trim() ? (
+        ) : query.trim() && !isLoading ? (
           <div className="text-gray-400 text-center text-lg">No results found for "{query}"</div>
         ) : null}
       </div>
