@@ -1,3 +1,4 @@
+// app/profile/ProfileHeader.tsx
 "use client";
 
 import Link from "next/link";

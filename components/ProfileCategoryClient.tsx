@@ -1,3 +1,4 @@
+// components/ProfileCategoryClient.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -44,7 +45,10 @@ export default function ProfileCategoryClient({
   categoryIcon,
   userId,
 }: ProfileCategoryClientProps) {
-  const [filteredItems, setFilteredItems] = useState<MediaItem[]>(items);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadedItems, setLoadedItems] = useState<MediaItem[]>([]);
+  const [loadProgress, setLoadProgress] = useState(0);
+  const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
   const [sortOption, setSortOption] = useState<string>("recently_updated");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterGenre, setFilterGenre] = useState<string>("all");
@@ -55,9 +59,50 @@ export default function ProfileCategoryClient({
     new Set(items.flatMap((item) => item.genres || []))
   ).sort();
 
+  // Load items progressively for a smoother UI experience
+  useEffect(() => {
+    setIsLoading(true);
+    setLoadedItems([]);
+    setLoadProgress(0);
+    
+    if (items.length === 0) {
+      setIsLoading(false);
+      return;
+    }
+    
+    // Load items in batches for a smoother experience
+    const batchSize = 5;
+    const totalItems = items.length;
+    let loadedCount = 0;
+    
+    const loadBatch = (startIndex: number) => {
+      const endIndex = Math.min(startIndex + batchSize, totalItems);
+      const batch = items.slice(startIndex, endIndex);
+      
+      setLoadedItems(prev => [...prev, ...batch]);
+      loadedCount = endIndex;
+      
+      const progress = Math.round((loadedCount / totalItems) * 100);
+      setLoadProgress(progress);
+      
+      if (loadedCount < totalItems) {
+        // Load next batch after a small delay
+        setTimeout(() => loadBatch(loadedCount), 100);
+      } else {
+        // All items loaded
+        setIsLoading(false);
+      }
+    };
+    
+    // Start loading the first batch
+    loadBatch(0);
+  }, [items]);
+
   // Apply filters and sorting whenever the dependencies change
   useEffect(() => {
-    let result = [...items];
+    if (isLoading) return;
+    
+    let result = [...loadedItems];
 
     // Apply search filter
     if (searchQuery) {
@@ -106,10 +151,28 @@ export default function ProfileCategoryClient({
     });
 
     setFilteredItems(result);
-  }, [items, sortOption, filterType, filterGenre, searchQuery, categoryName]);
+  }, [loadedItems, sortOption, filterType, filterGenre, searchQuery, categoryName, isLoading]);
 
   // Get the icon component based on the category
   const IconComponent = getCategoryIcon(categoryIcon);
+
+  // Show loading indicator
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8">
+        <div className="w-full max-w-md bg-gray-800/50 rounded-full h-3 mb-6 overflow-hidden">
+          <div 
+            className={`h-full bg-gradient-to-r ${colorTheme} rounded-full transition-all duration-300`}
+            style={{ width: `${loadProgress}%` }}
+          ></div>
+        </div>
+        <p className="text-white text-lg font-medium mb-2">Loading your {categoryName.toLowerCase()} list</p>
+        <p className="text-gray-400">
+          {loadedItems.length} of {items.length} items ({loadProgress}%)
+        </p>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -234,6 +297,16 @@ export default function ProfileCategoryClient({
                 >
                   Movies
                 </button>
+                <button
+                  onClick={() => setFilterType("tv")}
+                  className={`px-3 py-1 rounded-full text-sm ${
+                    filterType === "tv"
+                      ? `bg-gradient-to-r ${colorTheme} text-white`
+                      : "bg-gray-800 text-gray-400 hover:text-white"
+                  } transition-colors`}
+                >
+                  TV Shows
+                </button>
               </div>
             </div>
 
@@ -323,7 +396,7 @@ export default function ProfileCategoryClient({
               key={`${item.id}-${index}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.05 }}
+              transition={{ duration: 0.4, delay: Math.min(0.5, index * 0.05) }}
             >
               <MediaCard item={item} />
             </motion.div>
