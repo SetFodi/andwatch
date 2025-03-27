@@ -395,7 +395,7 @@ export default function ProfileCategoryClient({
   };
 
   return (
-    <div className="animate-fadeIn opacity-0">
+    <div className="opacity-100">
       {/* Header Section */}
       <div className="mb-12">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
@@ -628,8 +628,7 @@ export default function ProfileCategoryClient({
             {filteredItems.map((item, index) => (
               <div 
                 key={`${item.id}-${index}`}
-                className="opacity-0 animate-fadeIn" 
-                style={{ animationDelay: `${Math.min(0.5, index * 0.05)}s`, animationFillMode: 'forwards' }}
+                className="opacity-100" 
               >
                 <MediaCard item={item} />
               </div>
