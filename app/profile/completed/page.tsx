@@ -12,10 +12,9 @@ import ConnectionErrorBoundary from "../../../components/ConnectionErrorBoundary
 // Set revalidation period for the page
 export const revalidate = 3600; // 1 hour
 
-// Set a very conservative limit for initial load
-const INITIAL_LOAD_LIMIT = 15; // Reduced from 50
-const BATCH_SIZE = 1; // Reduced to the absolute minimum
-const FULL_LOAD_PARAM = "fullLoad"; // URL parameter to indicate full load request
+// Pagination settings
+const PAGE_SIZE = 20; // Items per page
+const BATCH_SIZE = 2; // Process in batches of 2 for better performance
 
 // Fetch userData with watchlist using error handling - with extra precautions
 async function getUserData(userId: string) {
@@ -155,16 +154,31 @@ async function fetchItemDetails(item: any) {
   );
 }
 
-// Process watchlist items to include details from external APIs - super conservative approach
-async function processWatchlist(watchlist: any[], limit: number | null = INITIAL_LOAD_LIMIT) {
+// Process watchlist items with pagination
+async function processWatchlistPaginated(watchlist: any[], page: number = 1, pageSize: number = PAGE_SIZE) {
   // Filter for completed status
   const completedItems = watchlist.filter(item => item.status === "completed");
   
-  // Limit items to prevent overloading - use a very small number initially unless fullLoad is true
-  const limitedItems = limit ? completedItems.slice(0, limit) : completedItems;
+  // Calculate pagination parameters
+  const totalItems = completedItems.length;
+  const startIndex = (page - 1) * pageSize;
+  let endIndex = startIndex + pageSize;
   
-  // Process with minimal batch size to reduce strain
-  return processBatch(limitedItems, fetchItemDetails, BATCH_SIZE);
+  // Make sure we don't go beyond the array
+  if (endIndex > totalItems) {
+    endIndex = totalItems;
+  }
+  
+  // Get the items for the current page
+  const paginatedItems = completedItems.slice(startIndex, endIndex);
+  
+  // Process in batches for better performance
+  return {
+    items: await processBatch(paginatedItems, fetchItemDetails, BATCH_SIZE),
+    totalItems,
+    currentPage: page,
+    totalPages: Math.ceil(totalItems / pageSize)
+  };
 }
 
 export default async function CompletedPage({
@@ -178,18 +192,23 @@ export default async function CompletedPage({
     redirect("/auth/signin?callbackUrl=/profile/completed");
   }
   
-  // Check if this is a full load request
-  const isFullLoad = searchParams[FULL_LOAD_PARAM] === "true";
+  // Get the page from the search parameters, default to 1
+  const pageParam = searchParams.page;
+  const page = typeof pageParam === 'string' ? parseInt(pageParam, 10) || 1 : 1;
   
   let userData;
   let error = null;
-  let completedItems = [];
-  let totalItems = 0;
+  let completedData = {
+    items: [],
+    totalItems: 0,
+    currentPage: page,
+    totalPages: 1
+  };
   
   try {
     // Wrap the entire data fetching in a timeout to prevent hanging
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Operation timed out after 20 seconds')), 20000)
+      setTimeout(() => reject(new Error('Operation timed out after 15 seconds')), 15000)
     );
 
     const fetchDataPromise = async () => {
@@ -200,23 +219,17 @@ export default async function CompletedPage({
         notFound();
       }
       
-      // Calculate total count
-      totalItems = (userData.watchlist || []).filter(item => item.status === "completed").length;
+      // Process the watchlist with pagination
+      completedData = await processWatchlistPaginated(userData.watchlist || [], page);
       
-      // Process only a subset initially, or all items if fullLoad is true
-      completedItems = await processWatchlist(userData.watchlist || [], isFullLoad ? null : INITIAL_LOAD_LIMIT);
-      
-      return { userData, completedItems, totalItems };
+      return { userData, completedData };
     };
 
     // Race between timeout and data fetching
-    const { completedItems: items, totalItems: total } = await Promise.race([
+    await Promise.race([
       fetchDataPromise(),
       timeoutPromise,
     ]);
-    
-    completedItems = items;
-    totalItems = total;
     
   } catch (err) {
     console.error("Error in CompletedPage:", err);
@@ -240,15 +253,15 @@ export default async function CompletedPage({
             </div>
           ) : (
             <ProfileCategoryClient 
-              items={completedItems} 
+              items={completedData.items} 
               categoryName="Completed" 
               colorTheme="from-emerald-600 to-teal-600"
               categoryIcon="check"
               userId={session.user.id}
-              totalCount={totalItems}
-              displayLoadMoreLink={!isFullLoad && completedItems.length < totalItems}
-              fullLoadUrl={`/profile/completed?${FULL_LOAD_PARAM}=true`}
-              isFullLoad={isFullLoad}
+              totalCount={completedData.totalItems}
+              currentPage={completedData.currentPage}
+              totalPages={completedData.totalPages}
+              isPaginated={true}
             />
           )}
         </div>

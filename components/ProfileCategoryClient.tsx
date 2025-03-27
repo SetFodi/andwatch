@@ -2,11 +2,47 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import MediaCard from "../app/profile/MediaCard";
 import EmptyState from "../app/profile/EmptyState";
 
 type CategoryIcon = "play" | "calendar" | "check";
+
+interface MediaItem {
+  id: string | number;
+  title: string;
+  image: string | null;
+  score: number | null;
+  type: "anime" | "movie" | "tv";
+  year: number | null;
+  url: string;
+  userRating?: number | null;
+  status?: string | null;
+  addedAt?: string | Date;
+  updatedAt?: string | Date;
+  completedAt?: string | Date;
+  genres?: string[];
+  episodes?: number;
+  progress?: number;
+  totalEpisodes?: number;
+  runtime?: number;
+}
+
+interface ProfileCategoryClientProps {
+  items: MediaItem[];
+  categoryName: string;
+  colorTheme: string;
+  categoryIcon: CategoryIcon;
+  userId: string;
+  totalCount?: number;
+  currentPage?: number;
+  totalPages?: number;
+  isPaginated?: boolean;
+  displayLoadMoreLink?: boolean;
+  fullLoadUrl?: string;
+  isFullLoad?: boolean;
+}
 
 // Helper function to get category icon
 function getCategoryIcon(iconName: CategoryIcon) {
@@ -47,49 +83,21 @@ function getCategoryDescription(category: string, count: number): string {
   }
 }
 
-interface MediaItem {
-  id: string | number;
-  title: string;
-  image: string | null;
-  score: number | null;
-  type: "anime" | "movie" | "tv";
-  year: number | null;
-  url: string;
-  userRating?: number | null;
-  status?: string | null;
-  addedAt?: string | Date;
-  updatedAt?: string | Date;
-  completedAt?: string | Date;
-  genres?: string[];
-  episodes?: number;
-  progress?: number;
-  totalEpisodes?: number;
-  runtime?: number;
-}
-
-interface ProfileCategoryClientProps {
-  items: MediaItem[];
-  categoryName: string;
-  colorTheme: string;
-  categoryIcon: CategoryIcon;
-  userId: string;
-  totalCount?: number; // Added to support knowing the total count vs what's loaded
-  displayLoadMoreLink?: boolean; // Added to show a dedicated "Load More" link
-  fullLoadUrl?: string; // URL to load all items
-  isFullLoad?: boolean; // Flag to indicate if this is a full load view
-}
-
 export default function ProfileCategoryClient({
   items,
   categoryName,
   colorTheme,
   categoryIcon,
   userId,
-  totalCount,
+  totalCount = 0,
+  currentPage = 1,
+  totalPages = 1,
+  isPaginated = false,
   displayLoadMoreLink = false,
   fullLoadUrl,
   isFullLoad = false,
 }: ProfileCategoryClientProps) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [loadedItems, setLoadedItems] = useState<MediaItem[]>([]);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -254,6 +262,12 @@ export default function ProfileCategoryClient({
   // Get the icon component based on the category
   const IconComponent = getCategoryIcon(categoryIcon);
 
+  // Navigate to specific page
+  const navigateToPage = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    router.push(`/profile/${categoryName.toLowerCase()}?page=${page}`);
+  };
+
   // If we've detected a connection error
   if (hasConnectionError) {
     return (
@@ -318,6 +332,69 @@ export default function ProfileCategoryClient({
     );
   }
 
+  // Render pagination controls
+  const renderPagination = () => {
+    if (!isPaginated || totalPages <= 1) return null;
+  
+    const pageNumbers = [];
+    const maxPageButtons = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+    let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+    
+    if (endPage - startPage + 1 < maxPageButtons) {
+      startPage = Math.max(1, endPage - maxPageButtons + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+  
+    return (
+      <div className="flex justify-center mt-8">
+        <nav className="inline-flex rounded-md shadow-sm bg-gray-800/70 p-1" aria-label="Pagination">
+          <button
+            onClick={() => navigateToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`relative inline-flex items-center px-3 py-2 text-sm font-medium rounded-l-md 
+              ${currentPage === 1 
+                ? 'text-gray-500 cursor-not-allowed' 
+                : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}
+          >
+            <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
+          
+          {pageNumbers.map((page) => (
+            <button
+              key={page}
+              onClick={() => navigateToPage(page)}
+              className={`relative inline-flex items-center px-4 py-2 text-sm font-medium
+                ${currentPage === page
+                  ? `bg-gradient-to-r ${colorTheme} text-white`
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}
+            >
+              {page}
+            </button>
+          ))}
+          
+          <button
+            onClick={() => navigateToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`relative inline-flex items-center px-3 py-2 text-sm font-medium rounded-r-md
+              ${currentPage === totalPages
+                ? 'text-gray-500 cursor-not-allowed'
+                : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}
+          >
+            <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </nav>
+      </div>
+    );
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -340,6 +417,7 @@ export default function ProfileCategoryClient({
               <h1 className="text-4xl font-light tracking-wide text-white">
                 {categoryName} <span className="text-gray-400">({totalCount || items.length})</span>
                 {isFullLoad && <span className="text-sm text-emerald-400 ml-3">(Full View)</span>}
+                {isPaginated && <span className="text-sm text-emerald-400 ml-3">(Page {currentPage})</span>}
               </h1>
             </div>
             <div className={`h-1 w-20 bg-gradient-to-r ${colorTheme} rounded-full mb-4`}></div>
@@ -514,14 +592,19 @@ export default function ProfileCategoryClient({
         </div>
       </div>
 
-      {/* Results Count and Message about limited load */}
+      {/* Results Count and Message */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <p className="text-gray-400">
             Showing <span className="text-white font-medium">{filteredItems.length}</span> of{" "}
             <span className="text-white font-medium">{totalCount || items.length}</span> items
+            {isPaginated && (
+              <span className="text-gray-500 ml-1">
+                (Page {currentPage} of {totalPages})
+              </span>
+            )}
           </p>
-          {!isFullLoad && (totalCount && totalCount > items.length) && (
+          {!isFullLoad && !isPaginated && (totalCount && totalCount > items.length) && (
             <p className="text-yellow-500/70 text-sm mt-1">
               <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -559,8 +642,11 @@ export default function ProfileCategoryClient({
             ))}
           </div>
           
-          {/* Load More or View All Link - enhanced to be more prominent */}
-          {displayLoadMoreLink && fullLoadUrl && (totalCount > items.length) && (
+          {/* Pagination Controls */}
+          {isPaginated && renderPagination()}
+          
+          {/* Load More Link (for non-paginated view) */}
+          {displayLoadMoreLink && fullLoadUrl && !isPaginated && (totalCount > items.length) && (
             <div className="mt-12 text-center">
               <div className="mb-4 text-gray-400">
                 <p>Showing {items.length} of {totalCount} items</p>
@@ -589,6 +675,3 @@ export default function ProfileCategoryClient({
       ) : (
         <EmptyState mediaType={filterType === "all" ? "both" : filterType} />
       )}
-    </motion.div>
-  );
-}
