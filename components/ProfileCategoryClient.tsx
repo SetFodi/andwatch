@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback }
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import MediaCard from "../app/profile/MediaCard";
+import EmptyState from "../app/profile/EmptyState";
+
+type CategoryIcon = "play" | "calendar" | "check";
 
 // Helper function to get category icon
 function getCategoryIcon(iconName: CategoryIcon) {
@@ -39,13 +45,7 @@ function getCategoryDescription(category: string, count: number): string {
     default:
       return `${count} titles in this list`;
   }
-} from "react";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import MediaCard from "../app/profile/MediaCard";
-import EmptyState from "../app/profile/EmptyState";
-
-type CategoryIcon = "play" | "calendar" | "check";
+}
 
 interface MediaItem {
   id: string | number;
@@ -398,88 +398,6 @@ export default function ProfileCategoryClient({
                 {categoryName === "Completed" && (
                   <option value="recently_completed">Recently Completed</option>
                 )}
-          </div>
-        </div>
-      </div>
-
-      {/* Results Count and Message about limited load */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <p className="text-gray-400">
-            Showing <span className="text-white font-medium">{filteredItems.length}</span> of{" "}
-            <span className="text-white font-medium">{totalCount || items.length}</span> items
-          </p>
-          {!isFullLoad && (totalCount && totalCount > items.length) && (
-            <p className="text-yellow-500/70 text-sm mt-1">
-              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Initial load limited to improve performance
-            </p>
-          )}
-        </div>
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center"
-          >
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Clear search
-          </button>
-        )}
-      </div>
-
-      {/* Media Grid */}
-      {filteredItems.length > 0 ? (
-        <div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {filteredItems.map((item, index) => (
-              <motion.div
-                key={`${item.id}-${index}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: Math.min(0.5, index * 0.05) }}
-              >
-                <MediaCard item={item} />
-              </motion.div>
-            ))}
-          </div>
-          
-          {/* Load More or View All Link - enhanced to be more prominent */}
-          {displayLoadMoreLink && fullLoadUrl && (totalCount > items.length) && (
-            <div className="mt-12 text-center">
-              <div className="mb-4 text-gray-400">
-                <p>Showing {items.length} of {totalCount} items</p>
-                <p className="text-sm mt-1 text-gray-500">This is an optimized view to improve performance</p>
-              </div>
-              
-              <Link 
-                href={fullLoadUrl}
-                className={`inline-flex items-center px-8 py-4 rounded-xl bg-gradient-to-r ${colorTheme} text-white font-medium text-base shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300`}
-              >
-                <span>View All {totalCount} {categoryName}</span>
-                <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </Link>
-              
-              <p className="mt-4 text-sm text-gray-500">
-                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Loading all items at once may cause performance issues
-              </p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <EmptyState mediaType={filterType === "all" ? "both" : filterType} />
-      )}
-    </motion.div>
-  );
-}
                 <option value="title_asc">Title (A-Z)</option>
                 <option value="title_desc">Title (Z-A)</option>
                 <option value="score_desc">Highest Rating</option>
@@ -592,3 +510,85 @@ export default function ProfileCategoryClient({
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Results Count and Message about limited load */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <p className="text-gray-400">
+            Showing <span className="text-white font-medium">{filteredItems.length}</span> of{" "}
+            <span className="text-white font-medium">{totalCount || items.length}</span> items
+          </p>
+          {!isFullLoad && (totalCount && totalCount > items.length) && (
+            <p className="text-yellow-500/70 text-sm mt-1">
+              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Initial load limited to improve performance
+            </p>
+          )}
+        </div>
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Clear search
+          </button>
+        )}
+      </div>
+
+      {/* Media Grid */}
+      {filteredItems.length > 0 ? (
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {filteredItems.map((item, index) => (
+              <motion.div
+                key={`${item.id}-${index}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: Math.min(0.5, index * 0.05) }}
+              >
+                <MediaCard item={item} />
+              </motion.div>
+            ))}
+          </div>
+          
+          {/* Load More or View All Link - enhanced to be more prominent */}
+          {displayLoadMoreLink && fullLoadUrl && (totalCount > items.length) && (
+            <div className="mt-12 text-center">
+              <div className="mb-4 text-gray-400">
+                <p>Showing {items.length} of {totalCount} items</p>
+                <p className="text-sm mt-1 text-gray-500">This is an optimized view to improve performance</p>
+              </div>
+              
+              <Link 
+                href={fullLoadUrl}
+                className={`inline-flex items-center px-8 py-4 rounded-xl bg-gradient-to-r ${colorTheme} text-white font-medium text-base shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300`}
+              >
+                <span>View All {totalCount} {categoryName}</span>
+                <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+              
+              <p className="mt-4 text-sm text-gray-500">
+                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Loading all items at once may cause performance issues
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <EmptyState mediaType={filterType === "all" ? "both" : filterType} />
+      )}
+    </motion.div>
+  );
+}
