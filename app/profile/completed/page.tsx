@@ -12,17 +12,35 @@ import ConnectionErrorBoundary from "../../../components/ConnectionErrorBoundary
 // Set revalidation period for the page
 export const revalidate = 3600; // 1 hour
 
-// Fetch userData with watchlist using error handling
+// Set a very conservative limit for initial load
+const INITIAL_LOAD_LIMIT = 15; // Reduced from 50
+const BATCH_SIZE = 1; // Reduced to the absolute minimum
+
+// Fetch userData with watchlist using error handling - with extra precautions
 async function getUserData(userId: string) {
   try {
     // Check DB connection first
     const dbStatus = await checkDbConnection();
     if (dbStatus.status !== 'connected') {
+      console.error("MongoDB connection check failed before user data fetch");
       throw new Error(`Database connection issue: ${dbStatus.message || 'Unknown error'}`);
     }
     
-    await connectDB();
-    const user = await User.findById(userId).lean();
+    // Add a small delay to ensure connection is ready
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Connect with timeout
+    const connectPromise = connectDB();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Connection timeout')), 5000)
+    );
+    
+    await Promise.race([connectPromise, timeoutPromise]);
+    
+    // Use lean() and only select the necessary fields to reduce data load
+    const user = await User.findById(userId)
+      .select('watchlist.externalId watchlist.mediaType watchlist.status watchlist.userRating watchlist.addedAt watchlist.updatedAt watchlist.completedAt watchlist.progress')
+      .lean();
     
     if (!user) {
       return null;
@@ -58,17 +76,21 @@ async function fetchWithRetry(fetchFn) {
   throw lastError;
 }
 
-// Helper to fetch a single item's details with retry logic
+// Simplified item details fetcher that gets only essential fields
 async function fetchItemDetails(item: any) {
   return getOrSetCache(
     item.externalId,
     item.mediaType,
     async () => {
       try {
+        // For improved reliability, add a tiny delay between fetches
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
         if (item.mediaType === "anime") {
           const animeDetails = await fetchWithRetry(() => animeApi.getAnimeById(item.externalId));
           if (!animeDetails?.data) return null;
           
+          // Return minimal data structure
           return {
             id: item.externalId,
             title: animeDetails.data.title,
@@ -82,8 +104,7 @@ async function fetchItemDetails(item: any) {
             addedAt: item.addedAt,
             updatedAt: item.updatedAt || item.addedAt,
             completedAt: item.completedAt || item.updatedAt || item.addedAt,
-            episodes: animeDetails.data.episodes,
-            genres: animeDetails.data.genres?.map((g: any) => g.name) || [],
+            genres: (animeDetails.data.genres?.map((g: any) => g.name) || []).slice(0, 3), // Limit genres
           };
         } else if (item.mediaType === "movie") {
           const movieDetails = await fetchWithRetry(() => tmdbApi.getMovieById(item.externalId));
@@ -102,8 +123,7 @@ async function fetchItemDetails(item: any) {
             addedAt: item.addedAt,
             updatedAt: item.updatedAt || item.addedAt,
             completedAt: item.completedAt || item.updatedAt || item.addedAt,
-            genres: movieDetails.genres?.map((g: any) => g.name) || [],
-            runtime: movieDetails.runtime || null,
+            genres: (movieDetails.genres?.map((g: any) => g.name) || []).slice(0, 3), // Limit genres
           };
         } else if (item.mediaType === "tv") {
           const tvDetails = await fetchWithRetry(() => tmdbApi.getTVShowById(item.externalId));
@@ -122,7 +142,7 @@ async function fetchItemDetails(item: any) {
             addedAt: item.addedAt,
             updatedAt: item.updatedAt || item.addedAt,
             completedAt: item.completedAt || item.updatedAt || item.addedAt,
-            genres: tvDetails.genres?.map((g: any) => g.name) || [],
+            genres: (tvDetails.genres?.map((g: any) => g.name) || []).slice(0, 3), // Limit genres
           };
         }
         return null;
@@ -134,16 +154,16 @@ async function fetchItemDetails(item: any) {
   );
 }
 
-// Process watchlist items to include details from external APIs
-async function processWatchlist(watchlist: any[], limit = 50) {
+// Process watchlist items to include details from external APIs - super conservative approach
+async function processWatchlist(watchlist: any[], limit = INITIAL_LOAD_LIMIT) {
   // Filter for completed status
   const completedItems = watchlist.filter(item => item.status === "completed");
   
-  // Limit items to prevent overloading
+  // Limit items to prevent overloading - use a very small number initially
   const limitedItems = completedItems.slice(0, limit);
   
-  // Process in smaller batches for better reliability
-  return processBatch(limitedItems, fetchItemDetails, 2);
+  // Process with minimal batch size to reduce strain
+  return processBatch(limitedItems, fetchItemDetails, BATCH_SIZE);
 }
 
 export default async function CompletedPage() {
@@ -159,17 +179,36 @@ export default async function CompletedPage() {
   let totalItems = 0;
   
   try {
-    userData = await getUserData(session.user.id);
+    // Wrap the entire data fetching in a timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Operation timed out after 15 seconds')), 15000)
+    );
+
+    const fetchDataPromise = async () => {
+      // Get user data
+      userData = await getUserData(session.user.id);
+      
+      if (!userData) {
+        notFound();
+      }
+      
+      // Calculate total count
+      totalItems = (userData.watchlist || []).filter(item => item.status === "completed").length;
+      
+      // Process only a very small subset initially
+      completedItems = await processWatchlist(userData.watchlist || []);
+      
+      return { userData, completedItems, totalItems };
+    };
+
+    // Race between timeout and data fetching
+    const { completedItems: items, totalItems: total } = await Promise.race([
+      fetchDataPromise(),
+      timeoutPromise,
+    ]);
     
-    if (!userData) {
-      notFound();
-    }
-    
-    // Calculate total before limiting
-    totalItems = (userData.watchlist || []).filter(item => item.status === "completed").length;
-    
-    // Process a limited set of items for the initial load
-    completedItems = await processWatchlist(userData.watchlist || []);
+    completedItems = items;
+    totalItems = total;
     
   } catch (err) {
     console.error("Error in CompletedPage:", err);
@@ -199,6 +238,7 @@ export default async function CompletedPage() {
               categoryIcon="check"
               userId={session.user.id}
               totalCount={totalItems}
+              displayLoadMoreLink={completedItems.length < totalItems}
             />
           )}
         </div>

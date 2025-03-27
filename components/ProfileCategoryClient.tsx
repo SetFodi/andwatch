@@ -35,6 +35,7 @@ interface ProfileCategoryClientProps {
   categoryIcon: CategoryIcon;
   userId: string;
   totalCount?: number; // Added to support knowing the total count vs what's loaded
+  displayLoadMoreLink?: boolean; // Added to show a dedicated "Load More" link
 }
 
 export default function ProfileCategoryClient({
@@ -44,6 +45,7 @@ export default function ProfileCategoryClient({
   categoryIcon,
   userId,
   totalCount,
+  displayLoadMoreLink = false,
 }: ProfileCategoryClientProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadedItems, setLoadedItems] = useState<MediaItem[]>([]);
@@ -468,17 +470,22 @@ export default function ProfileCategoryClient({
         </div>
       </div>
 
-      {/* Results Count */}
+      {/* Results Count and Message about limited load */}
       <div className="flex justify-between items-center mb-6">
-        <p className="text-gray-400">
-          Showing <span className="text-white font-medium">{filteredItems.length}</span> of{" "}
-          <span className="text-white font-medium">{totalCount || items.length}</span> items
-          {(totalCount && totalCount > items.length) ? (
-            <span className="text-gray-500 ml-2 text-sm italic">
-              (Showing first {items.length} items for performance)
-            </span>
-          ) : null}
-        </p>
+        <div>
+          <p className="text-gray-400">
+            Showing <span className="text-white font-medium">{filteredItems.length}</span> of{" "}
+            <span className="text-white font-medium">{totalCount || items.length}</span> items
+          </p>
+          {(totalCount && totalCount > items.length) && (
+            <p className="text-yellow-500/70 text-sm mt-1">
+              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Initial load limited to improve performance
+            </p>
+          )}
+        </div>
         {searchQuery && (
           <button
             onClick={() => setSearchQuery("")}
@@ -494,17 +501,46 @@ export default function ProfileCategoryClient({
 
       {/* Media Grid */}
       {filteredItems.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {filteredItems.map((item, index) => (
-            <motion.div
-              key={`${item.id}-${index}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: Math.min(0.5, index * 0.05) }}
-            >
-              <MediaCard item={item} />
-            </motion.div>
-          ))}
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {filteredItems.map((item, index) => (
+              <motion.div
+                key={`${item.id}-${index}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: Math.min(0.5, index * 0.05) }}
+              >
+                <MediaCard item={item} />
+              </motion.div>
+            ))}
+          </div>
+          
+          {/* Load More or View All Link - enhanced to be more prominent */}
+          {displayLoadMoreLink && (totalCount > items.length) && (
+            <div className="mt-12 text-center">
+              <div className="mb-4 text-gray-400">
+                <p>Showing {items.length} of {totalCount} items</p>
+                <p className="text-sm mt-1 text-gray-500">This is an optimized view to improve performance</p>
+              </div>
+              
+              <Link 
+                href={`/profile/${categoryName.toLowerCase()}`}
+                className={`inline-flex items-center px-8 py-4 rounded-xl bg-gradient-to-r ${colorTheme} text-white font-medium text-base shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300`}
+              >
+                <span>View All {totalCount} {categoryName}</span>
+                <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+              
+              <p className="mt-4 text-sm text-gray-500">
+                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Loading all items at once may cause performance issues
+              </p>
+            </div>
+          )}
         </div>
       ) : (
         <EmptyState mediaType={filterType === "all" ? "both" : filterType} />
