@@ -15,6 +15,7 @@ export const revalidate = 3600; // 1 hour
 // Set a very conservative limit for initial load
 const INITIAL_LOAD_LIMIT = 15; // Reduced from 50
 const BATCH_SIZE = 1; // Reduced to the absolute minimum
+const FULL_LOAD_PARAM = "fullLoad"; // URL parameter to indicate full load request
 
 // Fetch userData with watchlist using error handling - with extra precautions
 async function getUserData(userId: string) {
@@ -155,23 +156,30 @@ async function fetchItemDetails(item: any) {
 }
 
 // Process watchlist items to include details from external APIs - super conservative approach
-async function processWatchlist(watchlist: any[], limit = INITIAL_LOAD_LIMIT) {
+async function processWatchlist(watchlist: any[], limit: number | null = INITIAL_LOAD_LIMIT) {
   // Filter for completed status
   const completedItems = watchlist.filter(item => item.status === "completed");
   
-  // Limit items to prevent overloading - use a very small number initially
-  const limitedItems = completedItems.slice(0, limit);
+  // Limit items to prevent overloading - use a very small number initially unless fullLoad is true
+  const limitedItems = limit ? completedItems.slice(0, limit) : completedItems;
   
   // Process with minimal batch size to reduce strain
   return processBatch(limitedItems, fetchItemDetails, BATCH_SIZE);
 }
 
-export default async function CompletedPage() {
+export default async function CompletedPage({
+  searchParams
+}: {
+  searchParams: { [key: string]: string | string[] | undefined }
+}) {
   const session = await getServerSession(authOptions);
   
   if (!session || !session.user) {
     redirect("/auth/signin?callbackUrl=/profile/completed");
   }
+  
+  // Check if this is a full load request
+  const isFullLoad = searchParams[FULL_LOAD_PARAM] === "true";
   
   let userData;
   let error = null;
@@ -181,7 +189,7 @@ export default async function CompletedPage() {
   try {
     // Wrap the entire data fetching in a timeout to prevent hanging
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Operation timed out after 15 seconds')), 15000)
+      setTimeout(() => reject(new Error('Operation timed out after 20 seconds')), 20000)
     );
 
     const fetchDataPromise = async () => {
@@ -195,8 +203,8 @@ export default async function CompletedPage() {
       // Calculate total count
       totalItems = (userData.watchlist || []).filter(item => item.status === "completed").length;
       
-      // Process only a very small subset initially
-      completedItems = await processWatchlist(userData.watchlist || []);
+      // Process only a subset initially, or all items if fullLoad is true
+      completedItems = await processWatchlist(userData.watchlist || [], isFullLoad ? null : INITIAL_LOAD_LIMIT);
       
       return { userData, completedItems, totalItems };
     };
@@ -238,7 +246,9 @@ export default async function CompletedPage() {
               categoryIcon="check"
               userId={session.user.id}
               totalCount={totalItems}
-              displayLoadMoreLink={completedItems.length < totalItems}
+              displayLoadMoreLink={!isFullLoad && completedItems.length < totalItems}
+              fullLoadUrl={`/profile/completed?${FULL_LOAD_PARAM}=true`}
+              isFullLoad={isFullLoad}
             />
           )}
         </div>

@@ -1,6 +1,45 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback }
+
+// Helper function to get category icon
+function getCategoryIcon(iconName: CategoryIcon) {
+  switch (iconName) {
+    case "play":
+      return (props: React.SVGProps<SVGSVGElement>) => (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+    case "calendar":
+      return (props: React.SVGProps<SVGSVGElement>) => (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      );
+    case "check":
+      return (props: React.SVGProps<SVGSVGElement>) => (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+  }
+}
+
+// Helper function to get category description
+function getCategoryDescription(category: string, count: number): string {
+  switch (category) {
+    case "Watching":
+      return `${count} titles you're currently watching`;
+    case "Planning":
+      return `${count} titles you're planning to watch`;
+    case "Completed":
+      return `${count} titles you've completed watching`;
+    default:
+      return `${count} titles in this list`;
+  }
+} from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import MediaCard from "../app/profile/MediaCard";
@@ -36,6 +75,8 @@ interface ProfileCategoryClientProps {
   userId: string;
   totalCount?: number; // Added to support knowing the total count vs what's loaded
   displayLoadMoreLink?: boolean; // Added to show a dedicated "Load More" link
+  fullLoadUrl?: string; // URL to load all items
+  isFullLoad?: boolean; // Flag to indicate if this is a full load view
 }
 
 export default function ProfileCategoryClient({
@@ -46,6 +87,8 @@ export default function ProfileCategoryClient({
   userId,
   totalCount,
   displayLoadMoreLink = false,
+  fullLoadUrl,
+  isFullLoad = false,
 }: ProfileCategoryClientProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadedItems, setLoadedItems] = useState<MediaItem[]>([]);
@@ -296,6 +339,7 @@ export default function ProfileCategoryClient({
               </Link>
               <h1 className="text-4xl font-light tracking-wide text-white">
                 {categoryName} <span className="text-gray-400">({totalCount || items.length})</span>
+                {isFullLoad && <span className="text-sm text-emerald-400 ml-3">(Full View)</span>}
               </h1>
             </div>
             <div className={`h-1 w-20 bg-gradient-to-r ${colorTheme} rounded-full mb-4`}></div>
@@ -354,6 +398,88 @@ export default function ProfileCategoryClient({
                 {categoryName === "Completed" && (
                   <option value="recently_completed">Recently Completed</option>
                 )}
+          </div>
+        </div>
+      </div>
+
+      {/* Results Count and Message about limited load */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <p className="text-gray-400">
+            Showing <span className="text-white font-medium">{filteredItems.length}</span> of{" "}
+            <span className="text-white font-medium">{totalCount || items.length}</span> items
+          </p>
+          {!isFullLoad && (totalCount && totalCount > items.length) && (
+            <p className="text-yellow-500/70 text-sm mt-1">
+              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Initial load limited to improve performance
+            </p>
+          )}
+        </div>
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Clear search
+          </button>
+        )}
+      </div>
+
+      {/* Media Grid */}
+      {filteredItems.length > 0 ? (
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {filteredItems.map((item, index) => (
+              <motion.div
+                key={`${item.id}-${index}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: Math.min(0.5, index * 0.05) }}
+              >
+                <MediaCard item={item} />
+              </motion.div>
+            ))}
+          </div>
+          
+          {/* Load More or View All Link - enhanced to be more prominent */}
+          {displayLoadMoreLink && fullLoadUrl && (totalCount > items.length) && (
+            <div className="mt-12 text-center">
+              <div className="mb-4 text-gray-400">
+                <p>Showing {items.length} of {totalCount} items</p>
+                <p className="text-sm mt-1 text-gray-500">This is an optimized view to improve performance</p>
+              </div>
+              
+              <Link 
+                href={fullLoadUrl}
+                className={`inline-flex items-center px-8 py-4 rounded-xl bg-gradient-to-r ${colorTheme} text-white font-medium text-base shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300`}
+              >
+                <span>View All {totalCount} {categoryName}</span>
+                <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+              
+              <p className="mt-4 text-sm text-gray-500">
+                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Loading all items at once may cause performance issues
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <EmptyState mediaType={filterType === "all" ? "both" : filterType} />
+      )}
+    </motion.div>
+  );
+}
                 <option value="title_asc">Title (A-Z)</option>
                 <option value="title_desc">Title (Z-A)</option>
                 <option value="score_desc">Highest Rating</option>
@@ -466,124 +592,3 @@ export default function ProfileCategoryClient({
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* Results Count and Message about limited load */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <p className="text-gray-400">
-            Showing <span className="text-white font-medium">{filteredItems.length}</span> of{" "}
-            <span className="text-white font-medium">{totalCount || items.length}</span> items
-          </p>
-          {(totalCount && totalCount > items.length) && (
-            <p className="text-yellow-500/70 text-sm mt-1">
-              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Initial load limited to improve performance
-            </p>
-          )}
-        </div>
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center"
-          >
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Clear search
-          </button>
-        )}
-      </div>
-
-      {/* Media Grid */}
-      {filteredItems.length > 0 ? (
-        <div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {filteredItems.map((item, index) => (
-              <motion.div
-                key={`${item.id}-${index}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: Math.min(0.5, index * 0.05) }}
-              >
-                <MediaCard item={item} />
-              </motion.div>
-            ))}
-          </div>
-          
-          {/* Load More or View All Link - enhanced to be more prominent */}
-          {displayLoadMoreLink && (totalCount > items.length) && (
-            <div className="mt-12 text-center">
-              <div className="mb-4 text-gray-400">
-                <p>Showing {items.length} of {totalCount} items</p>
-                <p className="text-sm mt-1 text-gray-500">This is an optimized view to improve performance</p>
-              </div>
-              
-              <Link 
-                href={`/profile/${categoryName.toLowerCase()}`}
-                className={`inline-flex items-center px-8 py-4 rounded-xl bg-gradient-to-r ${colorTheme} text-white font-medium text-base shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300`}
-              >
-                <span>View All {totalCount} {categoryName}</span>
-                <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </Link>
-              
-              <p className="mt-4 text-sm text-gray-500">
-                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Loading all items at once may cause performance issues
-              </p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <EmptyState mediaType={filterType === "all" ? "both" : filterType} />
-      )}
-    </motion.div>
-  );
-}
-
-// Helper function to get category icon
-function getCategoryIcon(iconName: CategoryIcon) {
-  switch (iconName) {
-    case "play":
-      return (props: React.SVGProps<SVGSVGElement>) => (
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      );
-    case "calendar":
-      return (props: React.SVGProps<SVGSVGElement>) => (
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      );
-    case "check":
-      return (props: React.SVGProps<SVGSVGElement>) => (
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      );
-  }
-}
-
-// Helper function to get category description
-function getCategoryDescription(category: string, count: number): string {
-  switch (category) {
-    case "Watching":
-      return `${count} titles you're currently watching`;
-    case "Planning":
-      return `${count} titles you're planning to watch`;
-    case "Completed":
-      return `${count} titles you've completed watching`;
-    default:
-      return `${count} titles in this list`;
-  }
-}
