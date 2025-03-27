@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import MediaCard from "../app/profile/MediaCard";
 import EmptyState from "../app/profile/EmptyState";
@@ -35,6 +34,7 @@ interface ProfileCategoryClientProps {
   colorTheme: string;
   categoryIcon: CategoryIcon;
   userId: string;
+  totalCount?: number; // Added to support knowing the total count vs what's loaded
 }
 
 export default function ProfileCategoryClient({
@@ -43,6 +43,7 @@ export default function ProfileCategoryClient({
   colorTheme,
   categoryIcon,
   userId,
+  totalCount,
 }: ProfileCategoryClientProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadedItems, setLoadedItems] = useState<MediaItem[]>([]);
@@ -53,11 +54,28 @@ export default function ProfileCategoryClient({
   const [filterGenre, setFilterGenre] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [hasConnectionError, setHasConnectionError] = useState(false);
 
   // Get all unique genres across items
   const allGenres = Array.from(
     new Set(items.flatMap((item) => item.genres || []))
   ).sort();
+
+  // Add error handling for connection errors
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      if (event.error && 
+         (event.error.message?.includes('Connection closed') || 
+          event.error.message?.includes('failed to fetch') ||
+          event.error.message?.includes('network error'))) {
+        setHasConnectionError(true);
+        event.preventDefault();
+      }
+    };
+    
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
 
   // Load items progressively for a smoother UI experience
   useEffect(() => {
@@ -72,7 +90,7 @@ export default function ProfileCategoryClient({
     }
     
     // Load items in batches for a smoother experience
-    const batchSize = 10; // Increased batch size for faster loading
+    const batchSize = 10; // Increased batch size for faster initial load
     const totalItems = items.length;
     let loadedCount = 0;
     
@@ -89,7 +107,7 @@ export default function ProfileCategoryClient({
         
         if (loadedCount < totalItems) {
           // Load next batch after a small delay
-          setTimeout(() => loadBatch(loadedCount), 50); // Reduced delay
+          setTimeout(() => loadBatch(loadedCount), 50); // Reduced delay for better performance
         } else {
           // All items loaded
           setIsLoading(false);
@@ -191,6 +209,29 @@ export default function ProfileCategoryClient({
   // Get the icon component based on the category
   const IconComponent = getCategoryIcon(categoryIcon);
 
+  // If we've detected a connection error
+  if (hasConnectionError) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8">
+        <div className="text-red-400 mb-4">
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <p className="text-white text-lg font-medium mb-2">Connection Error</p>
+        <p className="text-gray-400 text-center mb-6">
+          We couldn't load your {categoryName.toLowerCase()} list. This might be due to a connection issue.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className={`px-6 py-3 bg-gradient-to-r ${colorTheme} rounded-xl text-white font-medium hover:opacity-90 transition-all duration-300`}
+        >
+          Refresh Page
+        </button>
+      </div>
+    );
+  }
+
   // Show loading indicator
   if (isLoading) {
     return (
@@ -252,13 +293,13 @@ export default function ProfileCategoryClient({
                 </svg>
               </Link>
               <h1 className="text-4xl font-light tracking-wide text-white">
-                {categoryName} <span className="text-gray-400">({items.length})</span>
+                {categoryName} <span className="text-gray-400">({totalCount || items.length})</span>
               </h1>
             </div>
             <div className={`h-1 w-20 bg-gradient-to-r ${colorTheme} rounded-full mb-4`}></div>
             
             <p className="text-gray-400 text-lg">
-              {getCategoryDescription(categoryName, items.length)}
+              {getCategoryDescription(categoryName, totalCount || items.length)}
             </p>
           </div>
 
@@ -431,7 +472,12 @@ export default function ProfileCategoryClient({
       <div className="flex justify-between items-center mb-6">
         <p className="text-gray-400">
           Showing <span className="text-white font-medium">{filteredItems.length}</span> of{" "}
-          <span className="text-white font-medium">{items.length}</span> items
+          <span className="text-white font-medium">{totalCount || items.length}</span> items
+          {(totalCount && totalCount > items.length) ? (
+            <span className="text-gray-500 ml-2 text-sm italic">
+              (Showing first {items.length} items for performance)
+            </span>
+          ) : null}
         </p>
         {searchQuery && (
           <button
