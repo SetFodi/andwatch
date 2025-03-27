@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import MediaCard from "../app/profile/MediaCard";
 import EmptyState from "../app/profile/EmptyState";
 
@@ -396,11 +395,7 @@ export default function ProfileCategoryClient({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="animate-fadeIn opacity-0">
       {/* Header Section */}
       <div className="mb-12">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
@@ -631,14 +626,13 @@ export default function ProfileCategoryClient({
         <div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {filteredItems.map((item, index) => (
-              <motion.div
+              <div 
                 key={`${item.id}-${index}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: Math.min(0.5, index * 0.05) }}
+                className="opacity-0 animate-fadeIn" 
+                style={{ animationDelay: `${Math.min(0.5, index * 0.05)}s`, animationFillMode: 'forwards' }}
               >
                 <MediaCard item={item} />
-              </motion.div>
+              </div>
             ))}
           </div>
           
@@ -675,3 +669,6 @@ export default function ProfileCategoryClient({
       ) : (
         <EmptyState mediaType={filterType === "all" ? "both" : filterType} />
       )}
+    </div>
+  );
+}
