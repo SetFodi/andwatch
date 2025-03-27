@@ -35,6 +35,9 @@ async function getAnimeDetails(externalId: string, userWatchItem?: any) {
           totalEpisodes: data.data.episodes || 0,
           episodes: data.data.episodes || 0,
           genres: data.data.genres?.map((g: any) => g.name) || [],
+          addedAt: userWatchItem?.addedAt,
+          updatedAt: userWatchItem?.updatedAt,
+          completedAt: userWatchItem?.completedAt,
         };
       } catch (error) {
         console.error(`Error fetching anime ${externalId}:`, error);
@@ -64,6 +67,9 @@ async function getMovieDetails(externalId: string, userWatchItem?: any) {
           status: userWatchItem?.status || null,
           runtime: data.runtime || null,
           genres: data.genres?.map((g: any) => g.name) || [],
+          addedAt: userWatchItem?.addedAt,
+          updatedAt: userWatchItem?.updatedAt,
+          completedAt: userWatchItem?.completedAt,
         };
       } catch (error) {
         console.error(`Error fetching movie ${externalId}:`, error);
@@ -95,6 +101,9 @@ async function getTVShowDetails(externalId: string, userWatchItem?: any) {
           progress: userWatchItem?.progress || 0,
           totalEpisodes: data.number_of_episodes || 0,
           genres: data.genres?.map((g: any) => g.name) || [],
+          addedAt: userWatchItem?.addedAt,
+          updatedAt: userWatchItem?.updatedAt,
+          completedAt: userWatchItem?.completedAt,
         };
       } catch (error) {
         console.error(`Error fetching TV show ${externalId}:`, error);
@@ -111,9 +120,31 @@ export default async function Profile() {
     redirect("/sign-in");
   }
 
-  await connectDB();
+  let userDoc;
+  let error = null;
 
-  const userDoc = await User.findById(session.user?.id);
+  try {
+    await connectDB();
+    userDoc = await User.findById(session.user?.id).lean();
+  } catch (err) {
+    console.error("Failed to fetch user data:", err);
+    error = "Failed to connect to database. Please try again later.";
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 to-black p-8">
+        <div className="max-w-6xl mx-auto bg-gradient-to-br from-red-900/20 via-red-800/20 to-red-950/30 border border-red-700/30 p-8 rounded-2xl shadow-xl backdrop-blur-sm">
+          <div className="flex items-center space-x-4 text-red-300">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p className="text-lg font-medium">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!userDoc) {
     return (
@@ -137,132 +168,96 @@ export default async function Profile() {
     email: userDoc.email,
   };
 
+  // Make sure watchlist exists to prevent errors
+  const watchlist = userDoc.watchlist || [];
+
   // Filter items by status and media type
-  const watchingAnime = userDoc.watchlist.filter(item => item.status === "watching" && item.mediaType === "anime");
-  const watchingMovies = userDoc.watchlist.filter(item => item.status === "watching" && item.mediaType === "movie");
-  const watchingTVShows = userDoc.watchlist.filter(item => item.status === "watching" && item.mediaType === "tv");
+  const watchingAnime = watchlist.filter(item => item.status === "watching" && item.mediaType === "anime");
+  const watchingMovies = watchlist.filter(item => item.status === "watching" && item.mediaType === "movie");
+  const watchingTVShows = watchlist.filter(item => item.status === "watching" && item.mediaType === "tv");
   
-  const planToWatchAnime = userDoc.watchlist.filter(item => item.status === "plan_to_watch" && item.mediaType === "anime");
-  const planToWatchMovies = userDoc.watchlist.filter(item => item.status === "plan_to_watch" && item.mediaType === "movie");
-  const planToWatchTVShows = userDoc.watchlist.filter(item => item.status === "plan_to_watch" && item.mediaType === "tv");
+  const planToWatchAnime = watchlist.filter(item => item.status === "plan_to_watch" && item.mediaType === "anime");
+  const planToWatchMovies = watchlist.filter(item => item.status === "plan_to_watch" && item.mediaType === "movie");
+  const planToWatchTVShows = watchlist.filter(item => item.status === "plan_to_watch" && item.mediaType === "tv");
   
-  const completedAnime = userDoc.watchlist.filter(item => item.status === "completed" && item.mediaType === "anime");
-  const completedMovies = userDoc.watchlist.filter(item => item.status === "completed" && item.mediaType === "movie");
-  const completedTVShows = userDoc.watchlist.filter(item => item.status === "completed" && item.mediaType === "tv");
+  const completedAnime = watchlist.filter(item => item.status === "completed" && item.mediaType === "anime");
+  const completedMovies = watchlist.filter(item => item.status === "completed" && item.mediaType === "movie");
+  const completedTVShows = watchlist.filter(item => item.status === "completed" && item.mediaType === "tv");
   
   // Filter for rating-only items (no status)
-  const ratingOnlyItems = userDoc.watchlist.filter(item => 
+  const ratingOnlyItems = watchlist.filter(item => 
     !item.status && item.userRating 
   );
 
-  // Fetch details for anime items using batching
-  const watchingAnimeDetails = await processBatch(
-    watchingAnime,
-    item => getAnimeDetails(item.externalId, item),
-    5
-  );
+  // Use Promise.all to fetch all data in parallel for better performance
+  const [
+    watchingAnimeDetails,
+    planAnimeDetails,
+    completedAnimeDetails,
+    watchingMovieDetails,
+    planMovieDetails,
+    completedMovieDetails,
+    watchingTVShowDetails,
+    planTVShowDetails,
+    completedTVShowDetails,
+    ratingOnlyItemsDetails
+  ] = await Promise.all([
+    // Process anime items
+    processBatch(watchingAnime, item => getAnimeDetails(item.externalId, item), 3),
+    processBatch(planToWatchAnime, item => getAnimeDetails(item.externalId, item), 3),
+    processBatch(completedAnime, item => getAnimeDetails(item.externalId, item), 3),
+    
+    // Process movie items
+    processBatch(watchingMovies, item => getMovieDetails(item.externalId, item), 3),
+    processBatch(planToWatchMovies, item => getMovieDetails(item.externalId, item), 3),
+    processBatch(completedMovies, item => getMovieDetails(item.externalId, item), 3),
+    
+    // Process TV show items
+    processBatch(watchingTVShows, item => getTVShowDetails(item.externalId, item), 3),
+    processBatch(planToWatchTVShows, item => getTVShowDetails(item.externalId, item), 3),
+    processBatch(completedTVShows, item => getTVShowDetails(item.externalId, item), 3),
+    
+    // Process rating-only items (all types together to reduce API calls)
+    processBatch(
+      ratingOnlyItems,
+      async (item) => {
+        if (item.mediaType === "anime") {
+          return getAnimeDetails(item.externalId, item);
+        } else if (item.mediaType === "movie") {
+          return getMovieDetails(item.externalId, item);
+        } else if (item.mediaType === "tv") {
+          return getTVShowDetails(item.externalId, item);
+        }
+        return null;
+      },
+      3
+    )
+  ]);
   
-  const planAnimeDetails = await processBatch(
-    planToWatchAnime,
-    item => getAnimeDetails(item.externalId, item),
-    5
-  );
-  
-  const completedAnimeDetails = await processBatch(
-    completedAnime,
-    item => getAnimeDetails(item.externalId, item),
-    5
-  );
-  
-  const ratingOnlyAnimeDetails = await processBatch(
-    ratingOnlyItems.filter(item => item.mediaType === "anime"),
-    item => getAnimeDetails(item.externalId, item),
-    5
-  );
-  
-  // Fetch details for movie items
-  const watchingMovieDetails = await processBatch(
-    watchingMovies,
-    item => getMovieDetails(item.externalId, item),
-    5
-  );
-  
-  const planMovieDetails = await processBatch(
-    planToWatchMovies,
-    item => getMovieDetails(item.externalId, item),
-    5
-  );
-  
-  const completedMovieDetails = await processBatch(
-    completedMovies,
-    item => getMovieDetails(item.externalId, item),
-    5
-  );
-  
-  const ratingOnlyMovieDetails = await processBatch(
-    ratingOnlyItems.filter(item => item.mediaType === "movie"),
-    item => getMovieDetails(item.externalId, item),
-    5
-  );
-  
-  // Fetch details for TV show items
-  const watchingTVShowDetails = await processBatch(
-    watchingTVShows,
-    item => getTVShowDetails(item.externalId, item),
-    5
-  );
-  
-  const planTVShowDetails = await processBatch(
-    planToWatchTVShows,
-    item => getTVShowDetails(item.externalId, item),
-    5
-  );
-  
-  const completedTVShowDetails = await processBatch(
-    completedTVShows,
-    item => getTVShowDetails(item.externalId, item),
-    5
-  );
-  
-  const ratingOnlyTVShowDetails = await processBatch(
-    ratingOnlyItems.filter(item => item.mediaType === "tv"),
-    item => getTVShowDetails(item.externalId, item),
-    5
-  );
-
   // Combine items by category for displaying
   const watchingItems = [
     ...watchingAnimeDetails, 
     ...watchingMovieDetails, 
     ...watchingTVShowDetails
-  ];
+  ].filter(Boolean); // Remove any null items
   
   const planningItems = [
     ...planAnimeDetails, 
     ...planMovieDetails, 
-    ...planTVShowDetails
-  ];
+    ...planTVShowDetails,
+    ...ratingOnlyItemsDetails // Add rating-only items to planning since they don't have a status
+  ].filter(Boolean);
   
   const completedItems = [
     ...completedAnimeDetails, 
     ...completedMovieDetails, 
     ...completedTVShowDetails
-  ];
+  ].filter(Boolean);
 
-  // Add rating-only items to planning
-  const ratingOnlyForPlanning = [
-    ...ratingOnlyAnimeDetails,
-    ...ratingOnlyMovieDetails,
-    ...ratingOnlyTVShowDetails
-  ];
-  
-  // Add them to planning since they don't have a status
-  planningItems.push(...ratingOnlyForPlanning);
-
-  // Calculate totals for display
-  const totalWatching = watchingAnime.length + watchingMovies.length + watchingTVShows.length;
-  const totalPlanning = planToWatchAnime.length + planToWatchMovies.length + planToWatchTVShows.length + ratingOnlyItems.length;
-  const totalCompleted = completedAnime.length + completedMovies.length + completedTVShows.length;
+  // Calculate totals for display - use the actual counts from the filtered arrays
+  const totalWatching = watchingItems.length;
+  const totalPlanning = planningItems.length;
+  const totalCompleted = completedItems.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black p-4 md:p-8 lg:p-12 text-white">

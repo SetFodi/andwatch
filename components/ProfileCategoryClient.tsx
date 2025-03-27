@@ -1,7 +1,6 @@
-// components/ProfileCategoryClient.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -53,6 +52,7 @@ export default function ProfileCategoryClient({
   const [filterType, setFilterType] = useState<string>("all");
   const [filterGenre, setFilterGenre] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Get all unique genres across items
   const allGenres = Array.from(
@@ -64,94 +64,129 @@ export default function ProfileCategoryClient({
     setIsLoading(true);
     setLoadedItems([]);
     setLoadProgress(0);
+    setLoadError(null);
     
-    if (items.length === 0) {
+    if (!items || items.length === 0) {
       setIsLoading(false);
       return;
     }
     
     // Load items in batches for a smoother experience
-    const batchSize = 5;
+    const batchSize = 10; // Increased batch size for faster loading
     const totalItems = items.length;
     let loadedCount = 0;
     
     const loadBatch = (startIndex: number) => {
-      const endIndex = Math.min(startIndex + batchSize, totalItems);
-      const batch = items.slice(startIndex, endIndex);
-      
-      setLoadedItems(prev => [...prev, ...batch]);
-      loadedCount = endIndex;
-      
-      const progress = Math.round((loadedCount / totalItems) * 100);
-      setLoadProgress(progress);
-      
-      if (loadedCount < totalItems) {
-        // Load next batch after a small delay
-        setTimeout(() => loadBatch(loadedCount), 100);
-      } else {
-        // All items loaded
+      try {
+        const endIndex = Math.min(startIndex + batchSize, totalItems);
+        const batch = items.slice(startIndex, endIndex);
+        
+        setLoadedItems(prev => [...prev, ...batch]);
+        loadedCount = endIndex;
+        
+        const progress = Math.round((loadedCount / totalItems) * 100);
+        setLoadProgress(progress);
+        
+        if (loadedCount < totalItems) {
+          // Load next batch after a small delay
+          setTimeout(() => loadBatch(loadedCount), 50); // Reduced delay
+        } else {
+          // All items loaded
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error loading items batch:", error);
+        setLoadError("There was an error loading your items. Please refresh the page to try again.");
         setIsLoading(false);
       }
     };
     
     // Start loading the first batch
     loadBatch(0);
+    
+    // Cleanup function for unmounting
+    return () => {
+      // This ensures any pending batch loads are cancelled if component unmounts
+      setLoadedItems([]);
+    };
   }, [items]);
 
   // Apply filters and sorting whenever the dependencies change
-  useEffect(() => {
+  const applyFiltersAndSort = useCallback(() => {
     if (isLoading) return;
     
-    let result = [...loadedItems];
+    try {
+      let result = [...loadedItems];
 
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter((item) =>
-        item.title.toLowerCase().includes(query)
-      );
-    }
-
-    // Apply media type filter
-    if (filterType !== "all") {
-      result = result.filter((item) => item.type === filterType);
-    }
-
-    // Apply genre filter
-    if (filterGenre !== "all") {
-      result = result.filter((item) => 
-        item.genres?.includes(filterGenre)
-      );
-    }
-
-    // Apply sorting
-    result.sort((a, b) => {
-      switch (sortOption) {
-        case "title_asc":
-          return a.title.localeCompare(b.title);
-        case "title_desc":
-          return b.title.localeCompare(a.title);
-        case "score_desc":
-          return (b.userRating || 0) - (a.userRating || 0);
-        case "year_desc":
-          return (b.year || 0) - (a.year || 0);
-        case "year_asc":
-          return (a.year || 0) - (b.year || 0);
-        case "recently_added":
-          return new Date(b.addedAt || 0).getTime() - new Date(a.addedAt || 0).getTime();
-        case "recently_completed":
-          if (categoryName === "Completed") {
-            return new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime();
-          }
-          return 0;
-        case "recently_updated":
-        default:
-          return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+      // Apply search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        result = result.filter((item) =>
+          item.title.toLowerCase().includes(query)
+        );
       }
-    });
 
-    setFilteredItems(result);
+      // Apply media type filter
+      if (filterType !== "all") {
+        result = result.filter((item) => item.type === filterType);
+      }
+
+      // Apply genre filter
+      if (filterGenre !== "all") {
+        result = result.filter((item) => 
+          item.genres?.includes(filterGenre)
+        );
+      }
+
+      // Apply sorting - wrap in try/catch to handle any potential date issues
+      result.sort((a, b) => {
+        try {
+          switch (sortOption) {
+            case "title_asc":
+              return a.title.localeCompare(b.title);
+            case "title_desc":
+              return b.title.localeCompare(a.title);
+            case "score_desc":
+              return (b.userRating || 0) - (a.userRating || 0);
+            case "year_desc":
+              return (b.year || 0) - (a.year || 0);
+            case "year_asc":
+              return (a.year || 0) - (b.year || 0);
+            case "recently_added":
+              const aAddedTime = a.addedAt ? new Date(a.addedAt).getTime() : 0;
+              const bAddedTime = b.addedAt ? new Date(b.addedAt).getTime() : 0;
+              return bAddedTime - aAddedTime;
+            case "recently_completed":
+              if (categoryName === "Completed") {
+                const aCompletedTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+                const bCompletedTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+                return bCompletedTime - aCompletedTime;
+              }
+              return 0;
+            case "recently_updated":
+            default:
+              const aUpdatedTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+              const bUpdatedTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+              return bUpdatedTime - aUpdatedTime;
+          }
+        } catch (error) {
+          console.error("Error during sorting:", error);
+          return 0; // Keep original order on error
+        }
+      });
+
+      setFilteredItems(result);
+    } catch (error) {
+      console.error("Error applying filters:", error);
+      // Set filtered items to empty array in case of error
+      setFilteredItems([]);
+    }
   }, [loadedItems, sortOption, filterType, filterGenre, searchQuery, categoryName, isLoading]);
+
+  // Use effect to apply filters when dependencies change
+  useEffect(() => {
+    applyFiltersAndSort();
+  }, [applyFiltersAndSort]);
 
   // Get the icon component based on the category
   const IconComponent = getCategoryIcon(categoryIcon);
@@ -170,6 +205,29 @@ export default function ProfileCategoryClient({
         <p className="text-gray-400">
           {loadedItems.length} of {items.length} items ({loadProgress}%)
         </p>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (loadError) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8">
+        <div className="text-red-400 mb-4">
+          <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <p className="text-white text-lg font-medium mb-2">Something went wrong</p>
+        <p className="text-gray-400 text-center mb-6">
+          {loadError}
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className={`px-6 py-3 bg-gradient-to-r ${colorTheme} rounded-xl text-white font-medium hover:opacity-90 transition-all duration-300`}
+        >
+          Refresh Page
+        </button>
       </div>
     );
   }

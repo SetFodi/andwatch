@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tab } from "@headlessui/react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,6 +27,17 @@ interface CategorySectionClientProps {
 
 export default function CategorySectionClient({ watching, planning, completed }: CategorySectionClientProps) {
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Use this effect to handle the initial animation and loading state
+  useEffect(() => {
+    // Set a short timeout to ensure component is mounted
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   const categories = [
     { name: "Watching", count: watching.length, items: watching, color: "from-blue-600 to-indigo-600", icon: PlayIcon },
@@ -44,6 +55,21 @@ export default function CategorySectionClient({ watching, planning, completed }:
       }
     }
   };
+  
+  // Create a shimmer loading placeholder
+  const renderLoadingPlaceholder = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+      {Array.from({ length: 10 }).map((_, index) => (
+        <div key={index} className="bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800/40">
+          <div className="aspect-[3/4] relative bg-gray-800 animate-pulse"></div>
+          <div className="p-4">
+            <div className="h-5 bg-gray-800 rounded animate-pulse mb-2"></div>
+            <div className="h-4 bg-gray-800 rounded animate-pulse w-2/3"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <motion.div 
@@ -82,7 +108,10 @@ export default function CategorySectionClient({ watching, planning, completed }:
                 className={`${selectedTabIndex === idx ? 'block' : 'hidden'}`}
                 static
               >
-                {category.items.length > 0 ? (
+                {isInitialLoad ? (
+                  // Show loading placeholder during initial load
+                  renderLoadingPlaceholder()
+                ) : category.items.length > 0 ? (
                   <motion.div
                     key={`panel-${idx}`}
                     variants={container}
@@ -98,7 +127,7 @@ export default function CategorySectionClient({ watching, planning, completed }:
                   <EmptyState mediaType="both" />
                 )}
                 
-                {category.items.length > 0 && (
+                {!isInitialLoad && category.items.length > 0 && (
                   <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
