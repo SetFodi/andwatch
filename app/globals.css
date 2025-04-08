@@ -60,7 +60,126 @@ button{
   }
 }
 
-/* Animation Keyframes */
+
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(20px, -30px);
+  }
+  50% {
+    transform: translate(-20px, 20px);
+  }
+  75% {
+    transform: translate(20px, 30px);
+  }
+}
+
+@keyframes float-delay {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-20px, -30px);
+  }
+  50% {
+    transform: translate(20px, 20px);
+  }
+  75% {
+    transform: translate(-20px, 30px);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes pulse-slow-delay {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.7;
+    box-shadow: 0 0 10px 2px currentColor;
+  }
+  50% {
+    opacity: 0.3;
+    box-shadow: 0 0 5px 1px currentColor;
+  }
+}
+
+@keyframes pulse-glow-delay {
+  0%, 100% {
+    opacity: 0.7;
+    box-shadow: 0 0 10px 2px currentColor;
+  }
+  50% {
+    opacity: 0.3;
+    box-shadow: 0 0 5px 1px currentColor;
+  }
+}
+
+@keyframes pulse-glow-delay2 {
+  0%, 100% {
+    opacity: 0.7;
+    box-shadow: 0 0 10px 2px currentColor;
+  }
+  50% {
+    opacity: 0.3;
+    box-shadow: 0 0 5px 1px currentColor;
+  }
+}
+
+.animate-float {
+  animation: float 25s ease-in-out infinite;
+}
+
+.animate-float-delay {
+  animation: float-delay 25s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-pulse-slow-delay {
+  animation: pulse-slow-delay 5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation-delay: 2.5s;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow-delay {
+  animation: pulse-glow-delay 4s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+.animate-pulse-glow-delay2 {
+  animation: pulse-glow-delay2 4s ease-in-out infinite;
+  animation-delay: 2.5s;
+}
+
+.bg-grid-pattern {
+  background-size: 20px 20px;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

@@ -51,45 +51,49 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
 
   return (
     <GlobalLoadingProvider>
-      {/* Fixed header with glass effect */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-black/70 border-b border-gray-800/50">
+      {/* Fixed header with enhanced glass effect */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/60 border-b border-gray-800/30 shadow-lg shadow-black/20">
         <div className="max-w-7xl mx-auto h-16 md:h-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center group">
-            <svg viewBox="0 0 24 24" className="w-7 h-7 text-indigo-500 mr-2 group-hover:text-indigo-400 transition-colors duration-300" fill="none" stroke="currentColor">
+          {/* Logo with enhanced animation */}
+          <Link href="/" className="flex items-center group relative">
+            <div className="absolute -inset-2 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl group-hover:blur-md"></div>
+            <svg viewBox="0 0 24 24" className="w-7 h-7 text-indigo-500 mr-2 group-hover:text-indigo-400 transition-colors duration-500 relative z-10 animate-pulse-slow" fill="none" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200 text-xl font-semibold">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-500">and</span>watch
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200 text-xl font-semibold relative z-10">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-indigo-300 to-purple-500 group-hover:from-indigo-300 group-hover:to-purple-400 transition-all duration-500">and</span>
+              <span className="group-hover:tracking-wide transition-all duration-500">watch</span>
             </span>
           </Link>
 
+          {/* Enhanced Navigation */}
           <nav className="hidden md:flex items-center">
-  <div className="flex items-center space-x-1 bg-gray-900/50 rounded-xl p-1 border border-gray-800/30">
-    <NavLink href="/anime" icon={<AnimeIcon />} label="Anime" />
-    <NavLink href="/movies" icon={<MovieIcon />} label="Movies" />
-    <NavLink href="/tvshows" icon={<TVIcon />} label="TV Shows" />
-    <NavLink href="/about" icon={<AboutIcon />} label="About" />
-  </div>
-</nav>
+            <div className="flex items-center space-x-1 bg-gradient-to-r from-gray-900/80 to-gray-800/60 rounded-xl p-1 border border-gray-800/30 shadow-inner shadow-black/10 backdrop-blur-lg">
+              <NavLink href="/anime" icon={<AnimeIcon />} label="Anime" />
+              <NavLink href="/movies" icon={<MovieIcon />} label="Movies" />
+              <NavLink href="/tvshows" icon={<TVIcon />} label="TV Shows" />
+              <NavLink href="/about" icon={<AboutIcon />} label="About" />
+            </div>
+          </nav>
 
-          {/* User Section */}
+          {/* User Section with enhanced visual effects */}
           <div className="flex items-center space-x-4">
-            {/* Search Button */}
-            <Link href="/search" className="relative p-2.5 text-gray-400 hover:text-white transition-colors duration-200 rounded-xl hover:bg-gray-800/50 group">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Search Button with pulse animation */}
+            <Link href="/search" className="relative p-2.5 text-gray-400 hover:text-white transition-colors duration-300 rounded-xl hover:bg-gray-800/70 group overflow-hidden">
+              <span className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></span>
+              <svg className="w-5 h-5 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <span className="absolute inset-0 rounded-xl ring-2 ring-indigo-500/0 group-hover:ring-indigo-500/50 transition-all duration-300"></span>
+              <span className="absolute inset-0 rounded-xl ring-2 ring-indigo-500/0 group-hover:ring-indigo-500/50 group-hover:ring-offset-1 group-hover:ring-offset-black/40 transition-all duration-300 scale-90 group-hover:scale-100"></span>
             </Link>
 
             {status === "authenticated" ? (
               <div className="flex items-center">
-                {/* Profile Menu Dropdown */}
+                {/* Profile Menu Dropdown with enhanced animations */}
                 <div className="relative group">
                   <button className="flex items-center focus:outline-none">
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-700/50 flex items-center justify-center shadow-lg group-hover:shadow-indigo-500/20 transition-all duration-300">
+                    <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-700/50 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/30 transition-all duration-500 transform group-hover:scale-105">
                       {avatarUrl ? (
                         <Image 
                           src={avatarUrl} 
@@ -111,10 +115,10 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                     </div>
                   </button>
 
-                  {/* Dropdown Menu */}
-                  <div className="absolute right-0 top-full mt-1 w-64 bg-gradient-to-b from-gray-900 to-gray-950 border border-gray-800/70 rounded-xl shadow-2xl invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 transform group-hover:translate-y-0 translate-y-2 z-50 backdrop-blur-sm overflow-hidden">
-                    <div className="py-3 px-4 border-b border-gray-800/50 flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-700/50 flex items-center justify-center">
+                  {/* Enhanced Dropdown Menu with animations */}
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-gradient-to-b from-gray-900/95 to-gray-950/95 border border-gray-800/70 rounded-xl shadow-2xl shadow-black/40 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-y-0 translate-y-2 z-50 backdrop-blur-md overflow-hidden scale-95 group-hover:scale-100 origin-top-right">
+                    <div className="py-3 px-4 border-b border-gray-800/50 flex items-center space-x-3 bg-gradient-to-r from-indigo-900/20 to-purple-900/20">
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-700/50 flex items-center justify-center shadow-inner shadow-black/10">
                         {avatarUrl ? (
                           <Image 
                             src={avatarUrl} 
@@ -138,11 +142,12 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                       <MenuLink href="/profile" label="Profile" icon={<ProfileIcon />} />
                       <div className="px-3 pt-2 mt-1">
                         <form action="/api/auth/signout" method="post" className="w-full">
-                          <button type="submit" className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-950/30 rounded-lg transition-colors duration-200">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <button type="submit" className="w-full group flex items-center space-x-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-950/30 rounded-lg transition-all duration-300 relative overflow-hidden">
+                            <span className="absolute inset-0 bg-gradient-to-r from-red-900/0 via-red-900/0 to-red-900/0 group-hover:from-red-900/10 group-hover:via-red-900/20 group-hover:to-red-900/10 transition-all duration-500"></span>
+                            <svg className="w-4 h-4 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                             </svg>
-                            <span>Sign Out</span>
+                            <span className="relative z-10">Sign Out</span>
                           </button>
                         </form>
                       </div>
@@ -154,15 +159,20 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
               <div className="flex items-center space-x-3">
                 <Link
                   href="/auth/signin"
-                  className="text-sm px-4 py-2 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700/30 hover:border-indigo-500/50 text-white hover:text-white transition-all duration-200"
+                  className="text-sm px-4 py-2 rounded-xl bg-gray-800/70 hover:bg-gray-700/70 border border-gray-700/40 hover:border-indigo-500/50 text-white hover:text-white transition-all duration-300 relative group overflow-hidden"
                 >
-          <p className="text-white">Sign In</p>
+                  <span className="absolute inset-0 bg-gradient-to-r from-indigo-600/0 to-indigo-600/0 group-hover:from-indigo-600/10 group-hover:to-indigo-600/20 transition-all duration-500"></span>
+                  <p className="text-white relative z-10">Sign In</p>
                 </Link>
                 <Link
                   href="/auth/signup"
-                  className="hidden sm:flex text-sm px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md hover:shadow-indigo-500/20 transition-all duration-200"
+                  className="hidden sm:flex text-sm px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md hover:shadow-indigo-500/30 transition-all duration-300 relative group overflow-hidden"
                 >
-                  <p className="text-white">Sign Up</p>
+                  <span className="absolute inset-0 bg-gradient-to-r from-white/0 to-white/0 group-hover:from-white/5 group-hover:to-white/10 transition-all duration-500"></span>
+                  <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    <span className="absolute -inset-1 bg-gradient-to-r from-indigo-600/0 to-purple-600/0 group-hover:from-indigo-600/20 group-hover:to-purple-600/20 blur-xl transition-all duration-500"></span>
+                  </span>
+                  <p className="text-white relative z-10">Sign Up</p>
                 </Link>
               </div>
             )}
@@ -170,142 +180,159 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* Mobile Navigation Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-gray-800/50 bg-black/90 backdrop-blur-md z-50">
-  <div className="grid grid-cols-5 h-16">
-    <MobileNavLink href="/" icon={<HomeIcon />} label="Home" />
-    <MobileNavLink href="/anime" icon={<AnimeIcon />} label="Anime" />
-    <MobileNavLink href="/movies" icon={<MovieIcon />} label="Movies" />
-    <MobileNavLink href="/tvshows" icon={<TVIcon />} label="TV Shows" />
-    <MobileNavLink 
-      href={status === "authenticated" ? "/profile" : "/auth/signin"} 
-      icon={status === "authenticated" ? <ProfileIcon /> : <SignInIcon />} 
-      label={status === "authenticated" ? "Profile" : "Sign In"} 
-    />
-  </div>
-</div>
+      {/* Mobile Navigation Bar with enhanced styling */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-gray-800/40 bg-black/90 backdrop-blur-xl z-50 shadow-lg shadow-black/30">
+        <div className="grid grid-cols-5 h-16">
+          <MobileNavLink href="/" icon={<HomeIcon />} label="Home" />
+          <MobileNavLink href="/anime" icon={<AnimeIcon />} label="Anime" />
+          <MobileNavLink href="/movies" icon={<MovieIcon />} label="Movies" />
+          <MobileNavLink href="/tvshows" icon={<TVIcon />} label="TV Shows" />
+          <MobileNavLink 
+            href={status === "authenticated" ? "/profile" : "/auth/signin"} 
+            icon={status === "authenticated" ? <ProfileIcon /> : <SignInIcon />} 
+            label={status === "authenticated" ? "Profile" : "Sign In"} 
+          />
+        </div>
+      </div>
 
       {/* Add bottom padding on mobile for the fixed navigation */}
       <main className="flex-1 md:pb-0 pb-16">
         {children}
       </main>
 
-{/* Enhanced Footer */}
-<footer className="border-t border-gray-900/50 bg-gradient-to-b from-black/40 to-black/80 backdrop-blur-sm py-5 relative overflow-hidden">
-  {/* Decorative elements */}
-  <div className="absolute inset-0 opacity-5">
-    <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-indigo-500/20 blur-3xl"></div>
-    <div className="absolute -bottom-32 -left-32 w-64 h-64 rounded-full bg-purple-500/20 blur-3xl"></div>
-  </div>
-  
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* Logo section */}
-      <div className="col-span-1">
-        <Link href="/" className="flex items-center mb-3">
-          <svg viewBox="0 0 24 24" className="w-5 h-5 text-indigo-500 mr-1.5" fill="none" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 text-base font-semibold">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-500">and</span>watch
-          </span>
-        </Link>
-        <p className="text-gray-500 text-xs leading-relaxed">Track your anime and movies beautifully. Create personal collections and discover new content.</p>
-        
-        {/* Social links with actual URLs */}
-        <div className="flex space-x-3 mt-3">
-          <a href="https://www.instagram.com/fartenadzeluka/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-indigo-400 transition-colors">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-            </svg>
-          </a>
-          <a href="https://www.facebook.com/luka.fartenadze.1" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-indigo-400 transition-colors">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z" />
-            </svg>
-          </a>
-          <a href="https://github.com/SetFodi" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-indigo-400 transition-colors">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-            </svg>
-          </a>
+      {/* Enhanced Footer with animated elements */}
+      <footer className="border-t border-gray-900/50 bg-gradient-to-b from-black/60 to-black/90 backdrop-blur-sm py-5 relative overflow-hidden">
+        {/* Enhanced decorative elements */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-indigo-500/30 blur-3xl animate-blob-slow"></div>
+          <div className="absolute -bottom-32 -left-32 w-64 h-64 rounded-full bg-purple-500/30 blur-3xl animate-blob-slow animation-delay-2000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-indigo-800/10 blur-3xl animate-pulse-slow"></div>
         </div>
-      </div>
-      
-      {/* Quick Links */}
-      <div>
-        <h3 className="text-white text-sm font-medium mb-3">Explore</h3>
-        <ul className="space-y-1.5 text-xs">
-          <li><Link href="/" className="text-gray-400 hover:text-white transition-colors duration-200">Home</Link></li>
-          <li><Link href="/anime" className="text-gray-400 hover:text-white transition-colors duration-200">Anime</Link></li>
-          <li><Link href="/movies" className="text-gray-400 hover:text-white transition-colors duration-200">Movies</Link></li>
-          <li><Link href="/about" className="text-gray-400 hover:text-white transition-colors duration-200">About</Link></li>
-        </ul>
-      </div>
-      
-      {/* Account Links */}
-      <div>
-        <h3 className="text-white text-sm font-medium mb-3">Account</h3>
-        <ul className="space-y-1.5 text-xs">
-          <li><Link href="/profile" className="text-gray-400 hover:text-white transition-colors duration-200">Profile</Link></li>
-          <li><Link href="/auth/signin" className="text-gray-400 hover:text-white transition-colors duration-200">Sign In</Link></li>
-          <li><Link href="/auth/signup" className="text-gray-400 hover:text-white transition-colors duration-200">Sign Up</Link></li>
-        </ul>
-      </div>
-    </div>
-    
-    {/* Bottom copyright */}
-    <div className="mt-6 pt-4 border-t border-gray-900/70 flex flex-col sm:flex-row justify-between items-center gap-2">
-      <p className="text-gray-500 text-xs">© {new Date().getFullYear()} AndWatch. All rights reserved.</p>
-      <p className="text-gray-600 text-xs">Made with ♥ for anime & movie enthusiasts</p>
-    </div>
-  </div>
-</footer>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Logo section with animation */}
+            <div className="col-span-1">
+              <Link href="/" className="flex items-center mb-3 group">
+                <div className="relative">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-indigo-500 mr-1.5 group-hover:text-indigo-400 transition-colors duration-300" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 text-base font-semibold group-hover:from-white group-hover:to-gray-200 transition-all duration-300">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-500 group-hover:from-indigo-300 group-hover:to-purple-400 transition-all duration-300">and</span>
+                  <span className="group-hover:tracking-wide transition-all duration-300">watch</span>
+                </span>
+              </Link>
+              <p className="text-gray-500 text-xs leading-relaxed hover:text-gray-400 transition-colors duration-300">Track your anime and movies beautifully. Create personal collections and discover new content.</p>
+              
+              {/* Social links with enhanced hover effects */}
+              <div className="flex space-x-3 mt-3">
+                <a href="https://www.instagram.com/fartenadzeluka/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-indigo-400 transition-all duration-300 transform hover:scale-110">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                  </svg>
+                </a>
+                <a href="https://www.facebook.com/luka.fartenadze.1" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-indigo-400 transition-all duration-300 transform hover:scale-110">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z" />
+                  </svg>
+                </a>
+                <a href="https://github.com/SetFodi" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-indigo-400 transition-all duration-300 transform hover:scale-110">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+            
+            {/* Quick Links with hover effect */}
+            <div>
+              <h3 className="text-white text-sm font-medium mb-3 relative inline-block">
+                Explore
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-full transition-all duration-300"></span>
+              </h3>
+              <ul className="space-y-1.5 text-xs">
+                <li><Link href="/" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Home</Link></li>
+                <li><Link href="/anime" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Anime</Link></li>
+                <li><Link href="/movies" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Movies</Link></li>
+                <li><Link href="/about" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">About</Link></li>
+              </ul>
+            </div>
+            
+            {/* Account Links with hover effect */}
+            <div>
+              <h3 className="text-white text-sm font-medium mb-3 relative inline-block">
+                Account
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-full transition-all duration-300"></span>
+              </h3>
+              <ul className="space-y-1.5 text-xs">
+                <li><Link href="/profile" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Profile</Link></li>
+                <li><Link href="/auth/signin" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Sign In</Link></li>
+                <li><Link href="/auth/signup" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Sign Up</Link></li>
+              </ul>
+            </div>
+          </div>
+          
+          {/* Bottom copyright with subtle animation */}
+          <div className="mt-6 pt-4 border-t border-gray-900/70 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p className="text-gray-500 text-xs">© {new Date().getFullYear()} AndWatch. All rights reserved.</p>
+            <p className="text-gray-600 text-xs group">
+              <span className="inline-block group-hover:animate-pulse-slow">Made with</span> 
+              <span className="inline-block text-red-500 mx-1 transform group-hover:scale-125 transition-transform duration-300">♥</span> 
+              <span className="inline-block group-hover:animate-pulse-slow">for anime & movie enthusiasts</span>
+            </p>
+          </div>
+        </div>
+      </footer>
     </GlobalLoadingProvider>
   );
 }
 
-// Desktop Navigation Link Component
+// Desktop Navigation Link Component with enhanced hover effects
 function NavLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
   return (
     <Link 
       href={href}
-      className="flex items-center px-4 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-gray-800/70 transition-all duration-200"
+      className="flex items-center px-4 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-gray-800/70 transition-all duration-300 relative group overflow-hidden"
     >
-      <span className="mr-2">{icon}</span>
-      <span>{label}</span>
+      <span className="absolute inset-0 bg-gradient-to-r from-indigo-600/0 to-indigo-600/0 group-hover:from-indigo-600/10 group-hover:to-indigo-600/20 transition-all duration-500 rounded-lg"></span>
+      <span className="mr-2 transform group-hover:scale-110 transition-transform duration-300">{icon}</span>
+      <span className="group-hover:translate-x-1 transition-transform duration-300">{label}</span>
     </Link>
   );
 }
 
-// Mobile Navigation Link Component
+// Mobile Navigation Link Component with enhanced effects
 function MobileNavLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
   return (
     <Link 
       href={href} 
-      className="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-400 transition-colors duration-200"
+      className="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-400 transition-all duration-300 relative group"
     >
-      <span className="mb-1">{icon}</span>
-      <span className="text-xs">{label}</span>
+      <span className="absolute inset-0 bg-gradient-to-b from-indigo-600/0 to-indigo-600/0 group-hover:from-indigo-600/5 group-hover:to-indigo-600/10 opacity-0 group-hover:opacity-100 transition-all duration-500"></span>
+      <span className="mb-1 transform group-hover:scale-110 transition-transform duration-300 relative z-10">{icon}</span>
+      <span className="text-xs relative z-10 transition-all duration-300 group-hover:font-medium">{label}</span>
     </Link>
   );
 }
 
-// Dropdown Menu Link Component
+// Dropdown Menu Link Component with enhanced hover effects
 function MenuLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
   return (
     <Link 
       href={href} 
-      className="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800/60 mx-3 rounded-lg transition-colors duration-200"
+      className="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800/60 mx-3 rounded-lg transition-all duration-300 group relative overflow-hidden"
     >
-      <span className="mr-3 text-gray-400">{icon}</span>
-      <span>{label}</span>
+      <span className="absolute inset-0 bg-gradient-to-r from-indigo-600/0 to-indigo-600/0 group-hover:from-indigo-600/10 group-hover:to-indigo-600/20 transition-all duration-500"></span>
+      <span className="mr-3 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300 transform group-hover:scale-110 transition-transform">{icon}</span>
+      <span className="group-hover:translate-x-1 transition-transform duration-300">{label}</span>
     </Link>
   );
 }
 
-// Icons
+// Icons remain the same
 function HomeIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -359,3 +386,4 @@ function SignInIcon() {
     </svg>
   );
 }
+
