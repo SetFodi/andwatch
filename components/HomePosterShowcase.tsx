@@ -1,3 +1,4 @@
+// components/HomePosterShowcase.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,12 +16,47 @@ interface MediaItem {
 export default function HomePosterShowcase({ initialMedia }: { initialMedia: MediaItem[] }) {
   const [showcaseMedia, setShowcaseMedia] = useState<MediaItem[]>([]);
   
-  // Function to shuffle media
+  // Function to shuffle media with image validation
   const shuffleMedia = () => {
-    const shuffled = [...initialMedia]
-      .filter(item => item.image) // Ensure all items have images
-      .sort(() => 0.5 - Math.random()) // Shuffle
-      .slice(0, 4); // Take first 4
+    // Filter media that has valid images
+    const mediaWithImages = initialMedia.filter(item => Boolean(item.image));
+    
+    if (mediaWithImages.length < 4) {
+      // If not enough items with images, just use what we have
+      setShowcaseMedia(mediaWithImages);
+      return;
+    }
+    
+    // Ensure we have variety by taking at least one from each media type if available
+    let shuffled: MediaItem[] = [];
+    
+    // Try to get one from each category
+    const anime = mediaWithImages.filter(item => item.type === "anime");
+    const movies = mediaWithImages.filter(item => item.type === "movie");
+    const tvShows = mediaWithImages.filter(item => item.type === "tv");
+    
+    // Add one random item from each category that has items
+    if (anime.length) shuffled.push(anime[Math.floor(Math.random() * anime.length)]);
+    if (movies.length) shuffled.push(movies[Math.floor(Math.random() * movies.length)]);
+    if (tvShows.length) shuffled.push(tvShows[Math.floor(Math.random() * tvShows.length)]);
+    
+    // If we need more items to reach 4, fill from the remaining pool
+    const usedIds = new Set(shuffled.map(item => `${item.type}-${item.id}`));
+    const remaining = mediaWithImages.filter(
+      item => !usedIds.has(`${item.type}-${item.id}`)
+    );
+    
+    // Shuffle the remaining items
+    const shuffledRemaining = [...remaining].sort(() => 0.5 - Math.random());
+    
+    // Fill up to 4 items
+    while (shuffled.length < 4 && shuffledRemaining.length > 0) {
+      shuffled.push(shuffledRemaining.pop()!);
+    }
+    
+    // Final shuffle of the selected items
+    shuffled = shuffled.sort(() => 0.5 - Math.random());
+    
     setShowcaseMedia(shuffled);
   };
   
