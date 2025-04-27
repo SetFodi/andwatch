@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import MediaCard from "../app/profile/MediaCard";
-import EmptyState from "../app/profile/EmptyState";
+import MediaCard from "../profile/MediaCard";
+import EmptyState from "../profile/EmptyState";
 
 interface MediaItem {
   id: string | number;
