@@ -1,4 +1,3 @@
-// app/profile/completed/all/page.tsx
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../api/auth/[...nextauth]/route";
 import { notFound, redirect } from "next/navigation";
@@ -170,15 +169,20 @@ async function processCompletedItems(watchlist: any[], page = 1) {
   };
 }
 
-export default async function CompletedAllPage({ searchParams }) {
+export default async function CompletedAllPage({ 
+  searchParams = {} 
+}: { 
+  searchParams?: { page?: string } 
+}) {
   const session = await getServerSession(authOptions);
   
   if (!session || !session.user) {
     redirect("/auth/signin?callbackUrl=/profile/completed/all");
   }
   
-  // Get page from query params
-  const page = parseInt(searchParams?.page || '1', 10);
+  // Fix page param handling with proper defaults and type checking
+  const pageParam = searchParams?.page || '1';
+  const page = !isNaN(parseInt(pageParam)) ? parseInt(pageParam) : 1;
   
   let userData;
   let completedData = { items: [], totalItems: 0, totalPages: 1, currentPage: page };
@@ -217,17 +221,16 @@ export default async function CompletedAllPage({ searchParams }) {
             </div>
           ) : (
             <ProfileCategoryClient 
-              items={completedData.items} 
+              items={completedData.items || []} 
               categoryName="Completed" 
               colorTheme="from-emerald-600 to-teal-600"
               categoryIcon="check"
               userId={session.user.id}
               totalCount={completedData.totalItems}
               isFullLoad={true}
-              pagination={{
-                currentPage: completedData.currentPage,
-                totalPages: completedData.totalPages
-              }}
+              currentPage={completedData.currentPage}
+              totalPages={completedData.totalPages}
+              isPaginated={true}
             />
           )}
         </div>

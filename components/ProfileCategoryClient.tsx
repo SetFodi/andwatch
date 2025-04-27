@@ -1,3 +1,4 @@
+// components/ProfileCategoryClient.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -26,6 +27,12 @@ interface MediaItem {
   progress?: number;
   totalEpisodes?: number;
   runtime?: number;
+  isPlaceholder?: boolean;
+}
+
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
 }
 
 interface ProfileCategoryClientProps {
@@ -41,6 +48,7 @@ interface ProfileCategoryClientProps {
   displayLoadMoreLink?: boolean;
   fullLoadUrl?: string;
   isFullLoad?: boolean;
+  pagination?: PaginationInfo;
 }
 
 // Helper function to get category icon
@@ -83,7 +91,7 @@ function getCategoryDescription(category: string, count: number): string {
 }
 
 export default function ProfileCategoryClient({
-  items,
+  items = [], // Provide default empty array 
   categoryName,
   colorTheme,
   categoryIcon,
@@ -95,6 +103,7 @@ export default function ProfileCategoryClient({
   displayLoadMoreLink = false,
   fullLoadUrl,
   isFullLoad = false,
+  pagination
 }: ProfileCategoryClientProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
@@ -108,9 +117,13 @@ export default function ProfileCategoryClient({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [hasConnectionError, setHasConnectionError] = useState(false);
 
+  // Use current page and total pages from pagination prop if available
+  const paginationCurrentPage = pagination?.currentPage || currentPage || 1;
+  const paginationTotalPages = pagination?.totalPages || totalPages || 1;
+
   // Get all unique genres across items
   const allGenres = Array.from(
-    new Set(items.flatMap((item) => item.genres || []))
+    new Set(items.flatMap((item) => item?.genres || []))
   ).sort();
 
   // Add error handling for connection errors
@@ -141,15 +154,18 @@ export default function ProfileCategoryClient({
       return;
     }
     
+    // Filter out invalid items
+    const validItems = items.filter(item => item !== null && item !== undefined);
+    
     // Load items in batches for a smoother experience
     const batchSize = 10; // Increased batch size for faster initial load
-    const totalItems = items.length;
+    const totalItems = validItems.length;
     let loadedCount = 0;
     
     const loadBatch = (startIndex: number) => {
       try {
         const endIndex = Math.min(startIndex + batchSize, totalItems);
-        const batch = items.slice(startIndex, endIndex);
+        const batch = validItems.slice(startIndex, endIndex);
         
         setLoadedItems(prev => [...prev, ...batch]);
         loadedCount = endIndex;
@@ -186,7 +202,8 @@ export default function ProfileCategoryClient({
     if (isLoading) return;
     
     try {
-      let result = [...loadedItems];
+      // Filter out invalid items
+      let result = loadedItems.filter(item => item !== null && item !== undefined);
 
       // Apply search filter
       if (searchQuery) {
@@ -263,7 +280,7 @@ export default function ProfileCategoryClient({
 
   // Navigate to specific page
   const navigateToPage = (page: number) => {
-    if (page < 1 || page > totalPages) return;
+    if (page < 1 || page > paginationTotalPages) return;
     router.push(`/profile/${categoryName.toLowerCase()}?page=${page}`);
   };
 
@@ -333,12 +350,12 @@ export default function ProfileCategoryClient({
 
   // Render pagination controls
   const renderPagination = () => {
-    if (!isPaginated || totalPages <= 1) return null;
+    if (!isPaginated || paginationTotalPages <= 1) return null;
   
     const pageNumbers = [];
     const maxPageButtons = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
-    let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+    let startPage = Math.max(1, paginationCurrentPage - Math.floor(maxPageButtons / 2));
+    let endPage = Math.min(paginationTotalPages, startPage + maxPageButtons - 1);
     
     if (endPage - startPage + 1 < maxPageButtons) {
       startPage = Math.max(1, endPage - maxPageButtons + 1);
@@ -352,10 +369,10 @@ export default function ProfileCategoryClient({
       <div className="flex justify-center mt-8">
         <nav className="inline-flex rounded-md shadow-sm bg-gray-800/70 p-1" aria-label="Pagination">
           <button
-            onClick={() => navigateToPage(currentPage - 1)}
-            disabled={currentPage === 1}
+            onClick={() => navigateToPage(paginationCurrentPage - 1)}
+            disabled={paginationCurrentPage === 1}
             className={`relative inline-flex items-center px-3 py-2 text-sm font-medium rounded-l-md 
-              ${currentPage === 1 
+              ${paginationCurrentPage === 1 
                 ? 'text-gray-500 cursor-not-allowed' 
                 : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}
           >
@@ -369,7 +386,7 @@ export default function ProfileCategoryClient({
               key={page}
               onClick={() => navigateToPage(page)}
               className={`relative inline-flex items-center px-4 py-2 text-sm font-medium
-                ${currentPage === page
+                ${paginationCurrentPage === page
                   ? `bg-gradient-to-r ${colorTheme} text-white`
                   : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}
             >
@@ -378,10 +395,10 @@ export default function ProfileCategoryClient({
           ))}
           
           <button
-            onClick={() => navigateToPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
+            onClick={() => navigateToPage(paginationCurrentPage + 1)}
+            disabled={paginationCurrentPage === paginationTotalPages}
             className={`relative inline-flex items-center px-3 py-2 text-sm font-medium rounded-r-md
-              ${currentPage === totalPages
+              ${paginationCurrentPage === paginationTotalPages
                 ? 'text-gray-500 cursor-not-allowed'
                 : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}
           >
@@ -412,7 +429,7 @@ export default function ProfileCategoryClient({
               <h1 className="text-4xl font-light tracking-wide text-white">
                 {categoryName} <span className="text-gray-400">({totalCount || items.length})</span>
                 {isFullLoad && <span className="text-sm text-emerald-400 ml-3">(Full View)</span>}
-                {isPaginated && <span className="text-sm text-emerald-400 ml-3">(Page {currentPage})</span>}
+                {isPaginated && <span className="text-sm text-emerald-400 ml-3">(Page {paginationCurrentPage})</span>}
               </h1>
             </div>
             <div className={`h-1 w-20 bg-gradient-to-r ${colorTheme} rounded-full mb-4`}></div>
@@ -595,7 +612,7 @@ export default function ProfileCategoryClient({
             <span className="text-white font-medium">{totalCount || items.length}</span> items
             {isPaginated && (
               <span className="text-gray-500 ml-1">
-                (Page {currentPage} of {totalPages})
+                (Page {paginationCurrentPage} of {paginationTotalPages})
               </span>
             )}
           </p>
@@ -627,16 +644,16 @@ export default function ProfileCategoryClient({
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {filteredItems.map((item, index) => (
               <div 
-                key={`${item.id}-${index}`}
+                key={`${item?.id || index}-${index}`}
                 className="opacity-100" 
               >
-                <MediaCard item={item} />
+                {item && <MediaCard item={item} />}
               </div>
             ))}
           </div>
           
           {/* Pagination Controls */}
-          {isPaginated && renderPagination()}
+          {isPaginated && paginationTotalPages > 1 && renderPagination()}
           
           {/* Load More Link (for non-paginated view) */}
           {displayLoadMoreLink && fullLoadUrl && !isPaginated && (totalCount > items.length) && (
