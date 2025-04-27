@@ -1,4 +1,3 @@
-// lib/services/api.ts
 /**
  * This file contains services for external API integrations
  * - Jikan API for anime data (unofficial MyAnimeList API)
@@ -71,6 +70,20 @@ export const tmdbApi = {
     }
   },
 
+  async getMovieExternalIds(id: string | number) {
+    try {
+      const response = await fetch(
+        `${TMDB_BASE_URL}/movie/${id}/external_ids?api_key=${TMDB_API_KEY}`,
+        { next: { revalidate: 86400 } }
+      );
+      if (!response.ok) throw new Error(`Failed to fetch external IDs: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching external IDs:", error);
+      return null;
+    }
+  },
+
   async getPopularMovies(page = 1) {
     const response = await fetch(
       `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&page=${page}`,
@@ -120,6 +133,20 @@ export const tmdbApi = {
       return await response.json();
     } catch (error) {
       console.error("Error fetching TV show details:", error);
+      return null;
+    }
+  },
+
+  async getTVShowExternalIds(id: string | number) {
+    try {
+      const response = await fetch(
+        `${TMDB_BASE_URL}/tv/${id}/external_ids?api_key=${TMDB_API_KEY}`,
+        { next: { revalidate: 86400 } }
+      );
+      if (!response.ok) throw new Error(`Failed to fetch external IDs: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching external IDs:", error);
       return null;
     }
   },
