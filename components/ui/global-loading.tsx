@@ -1,3 +1,4 @@
+// components/ui/global-loading.tsx
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -23,29 +24,47 @@ export default function GlobalLoadingProvider({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Handle route changes
+  // Handle route changes with smarter loading approach
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let loadingShowTimeoutId: NodeJS.Timeout;
+    let loadingHideTimeoutId: NodeJS.Timeout;
     
-    setIsLoading(true);
-    timeoutId = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
+    // Only show loading indicator if navigation takes longer than 150ms
+    // This prevents flashing for quick page loads
+    loadingShowTimeoutId = setTimeout(() => {
+      setIsLoading(true);
+      
+      // Auto-hide after 3 seconds if something goes wrong to prevent permanent loading
+      loadingHideTimeoutId = setTimeout(() => {
+        setIsLoading(false);
+      }, 3000);
+    }, 150);
     
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(loadingShowTimeoutId);
+      clearTimeout(loadingHideTimeoutId);
+    };
   }, [pathname, searchParams]);
 
-  // Intercept fetch requests
+  // Intercept fetch requests with smarter tracking
   useEffect(() => {
     const originalFetch = window.fetch;
+    let activeFetchCounter = 0;
+    let lastFetchCompletedAt = 0;
     
     window.fetch = async function(...args) {
       const isApiCall = typeof args[0] === 'string' && 
         (args[0].startsWith('/api/') || args[0].includes('api.'));
       
       if (isApiCall) {
+        activeFetchCounter++;
         setPendingFetches(count => count + 1);
-        setIsLoading(true);
+        
+        // Only set loading to true if we haven't already shown loading
+        // or if it's been more than 300ms since the last fetch completed
+        if (activeFetchCounter === 1 || Date.now() - lastFetchCompletedAt > 300) {
+          setIsLoading(true);
+        }
       }
       
       try {
@@ -53,10 +72,19 @@ export default function GlobalLoadingProvider({
         return response;
       } finally {
         if (isApiCall) {
+          activeFetchCounter--;
+          lastFetchCompletedAt = Date.now();
+          
           setPendingFetches(count => {
             const newCount = count - 1;
             if (newCount <= 0) {
-              setIsLoading(false);
+              // Add a tiny delay before hiding to prevent flickering
+              // when multiple fetches complete close to each other
+              setTimeout(() => {
+                if (activeFetchCounter === 0) {
+                  setIsLoading(false);
+                }
+              }, 100);
             }
             return newCount;
           });
@@ -75,41 +103,39 @@ export default function GlobalLoadingProvider({
     <LoadingContext.Provider value={{ isLoading: showLoading, setManualLoading: setIsManualLoading }}>
       {children}
       <AnimatePresence>
-        {showLoading && <CleanAnimeLoading />}
+        {showLoading && <OptimizedLoadingIndicator />}
       </AnimatePresence>
     </LoadingContext.Provider>
   );
 }
 
-function CleanAnimeLoading() {
+function OptimizedLoadingIndicator() {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.2 }} // Faster fade in/out
       className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center"
     >
       <div className="flex flex-col items-center">
-        {/* Simple logo/text */}
         <motion.div
-          className="text-purple-300 text-3xl font-medium tracking-widest mb-12"
+          className="text-purple-300 text-3xl font-medium tracking-widest mb-8"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.1 }}
           style={{ textShadow: '0 0 8px rgba(168, 85, 247, 0.5)' }}
         >
           ANDWATCH
         </motion.div>
         
-        {/* Clean progress bar with subtle anime glow */}
         <div className="w-64 h-1 bg-gray-800 rounded-full overflow-hidden">
           <motion.div
             className="h-full bg-purple-500"
             initial={{ width: "0%" }}
             animate={{ width: "100%" }}
             transition={{ 
-              duration: 2.5, 
+              duration: 1.5, // Faster animation
               repeat: Infinity,
               ease: "easeInOut" 
             }}
@@ -117,22 +143,21 @@ function CleanAnimeLoading() {
           />
         </div>
         
-        {/* Simple status text with anime-style dot animation */}
-        <div className="mt-6 text-white/80 text-sm font-light tracking-wider flex items-center">
+        <div className="mt-4 text-white/80 text-sm font-light tracking-wider flex items-center">
           <span>Loading</span>
           <motion.span
             animate={{ opacity: [0, 1, 0] }}
-            transition={{ duration: 1, repeat: Infinity, repeatDelay: 0 }}
+            transition={{ duration: 0.7, repeat: Infinity, repeatDelay: 0 }}
             className="mx-0.5"
           >.</motion.span>
           <motion.span
             animate={{ opacity: [0, 1, 0] }}
-            transition={{ duration: 1, repeat: Infinity, repeatDelay: 0.2 }}
+            transition={{ duration: 0.7, repeat: Infinity, repeatDelay: 0.15 }}
             className="mx-0.5"
           >.</motion.span>
           <motion.span
             animate={{ opacity: [0, 1, 0] }}
-            transition={{ duration: 1, repeat: Infinity, repeatDelay: 0.4 }}
+            transition={{ duration: 0.7, repeat: Infinity, repeatDelay: 0.3 }}
             className="mx-0.5"
           >.</motion.span>
         </div>

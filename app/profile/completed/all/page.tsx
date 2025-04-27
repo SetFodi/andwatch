@@ -12,43 +12,39 @@ import ConnectionErrorBoundary from "../../../../components/ConnectionErrorBound
 // Set longer revalidation period for this full view
 export const revalidate = 7200; // 2 hours
 
-// Increase the timeout limit for this route since it's loading all items
-export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
-export const runtime = 'nodejs';
+// Pagination configuration
+const ITEMS_PER_PAGE = 20; // Match this to your grid (5 columns x 4 rows)
 
-// Optimized batch sizes for full loading
-const BATCH_SIZE = 5; // Process in smaller batches to avoid timeouts
-const MAX_CONCURRENT_BATCHES = 5; // Process multiple batches concurrently
+// Optimized fetch with single-function retry logic
+async function fetchWithRetry(fetchFn) {
+  const MAX_RETRIES = 2;
+  
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await fetchFn();
+    } catch (error) {
+      console.error(`Fetch attempt ${attempt + 1}/${MAX_RETRIES + 1} failed:`, error);
+      
+      if (attempt < MAX_RETRIES) {
+        await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
+      } else {
+        return null; // Return null on final failure instead of throwing
+      }
+    }
+  }
+}
 
-// Fetch userData with watchlist - optimized version for loading all items
+// More efficient user data fetching
 async function getUserData(userId: string) {
   try {
-    // Check DB connection first with longer timeout
-    const dbStatus = await Promise.race([
-      checkDbConnection(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Database connection check timeout')), 5000))
-    ]);
+    await connectDB();
     
-    if (dbStatus.status !== 'connected') {
-      throw new Error(`Database connection issue: ${dbStatus.message || 'Unknown error'}`);
-    }
-    
-    // Connect with longer timeout for this heavy operation
-    await Promise.race([
-      connectDB(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Database connection timeout')), 8000))
-    ]);
-    
-    // Only retrieve necessary fields to reduce data size
+    // Only retrieve necessary fields
     const user = await User.findById(userId)
-      .select('watchlist.externalId watchlist.mediaType watchlist.status watchlist.userRating watchlist.addedAt watchlist.updatedAt watchlist.completedAt')
+      .select('watchlist.externalId watchlist.mediaType watchlist.status watchlist.userRating watchlist.addedAt watchlist.updatedAt watchlist.completedAt watchlist.progress')
       .lean();
     
-    if (!user) {
-      return null;
-    }
-    
+    if (!user) return null;
     return user;
   } catch (error) {
     console.error("Error fetching user data:", error);
@@ -56,31 +52,7 @@ async function getUserData(userId: string) {
   }
 }
 
-// Helper function with error handling and exponential backoff for API requests
-async function fetchWithRetry(fetchFn) {
-  const MAX_RETRIES = 3;
-  let lastError;
-  
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      return await fetchFn();
-    } catch (error) {
-      console.error(`Fetch attempt ${attempt + 1}/${MAX_RETRIES + 1} failed:`, error);
-      lastError = error;
-      
-      // Only wait if we're going to retry, with exponential backoff
-      if (attempt < MAX_RETRIES) {
-        const backoffTime = Math.pow(2, attempt) * 500; // 500ms, 1s, 2s, 4s
-        await new Promise(resolve => setTimeout(resolve, backoffTime));
-      }
-    }
-  }
-  
-  // If we get here, all retries failed
-  return null; // Return null instead of throwing to allow partial results
-}
-
-// Optimized item details fetcher with minimal fields for better performance
+// Simplified item details fetcher that returns placeholder on failure
 async function fetchItemDetails(item: any) {
   return getOrSetCache(
     item.externalId,
@@ -89,9 +61,8 @@ async function fetchItemDetails(item: any) {
       try {
         if (item.mediaType === "anime") {
           const animeDetails = await fetchWithRetry(() => animeApi.getAnimeById(item.externalId));
-          if (!animeDetails?.data) return null;
+          if (!animeDetails?.data) return createPlaceholder(item);
           
-          // Return minimal data structure
           return {
             id: item.externalId,
             title: animeDetails.data.title,
@@ -105,11 +76,11 @@ async function fetchItemDetails(item: any) {
             addedAt: item.addedAt,
             updatedAt: item.updatedAt || item.addedAt,
             completedAt: item.completedAt || item.updatedAt || item.addedAt,
-            genres: (animeDetails.data.genres?.map((g: any) => g.name) || []).slice(0, 5), // Limit genres
+            genres: (animeDetails.data.genres?.map((g: any) => g.name) || []).slice(0, 5), 
           };
         } else if (item.mediaType === "movie") {
           const movieDetails = await fetchWithRetry(() => tmdbApi.getMovieById(item.externalId));
-          if (!movieDetails) return null;
+          if (!movieDetails) return createPlaceholder(item);
           
           return {
             id: item.externalId,
@@ -124,11 +95,11 @@ async function fetchItemDetails(item: any) {
             addedAt: item.addedAt,
             updatedAt: item.updatedAt || item.addedAt,
             completedAt: item.completedAt || item.updatedAt || item.addedAt,
-            genres: (movieDetails.genres?.map((g: any) => g.name) || []).slice(0, 5), // Limit genres
+            genres: (movieDetails.genres?.map((g: any) => g.name) || []).slice(0, 5),
           };
         } else if (item.mediaType === "tv") {
           const tvDetails = await fetchWithRetry(() => tmdbApi.getTVShowById(item.externalId));
-          if (!tvDetails) return null;
+          if (!tvDetails) return createPlaceholder(item);
           
           return {
             id: item.externalId,
@@ -143,97 +114,86 @@ async function fetchItemDetails(item: any) {
             addedAt: item.addedAt,
             updatedAt: item.updatedAt || item.addedAt,
             completedAt: item.completedAt || item.updatedAt || item.addedAt,
-            genres: (tvDetails.genres?.map((g: any) => g.name) || []).slice(0, 5), // Limit genres
+            genres: (tvDetails.genres?.map((g: any) => g.name) || []).slice(0, 5),
           };
         }
-        return null;
+        return createPlaceholder(item);
       } catch (error) {
         console.error(`Error fetching ${item.mediaType} ${item.externalId}:`, error);
-        return null; // Return null instead of throwing to allow partial results
+        return createPlaceholder(item);
       }
     }
   );
 }
 
-// Improved process method to handle all items with better performance
-async function processAllCompletedItems(watchlist: any[]) {
+// Create placeholder to maintain grid layout
+function createPlaceholder(item: any) {
+  return {
+    id: item.externalId,
+    title: item.mediaType === "anime" ? "Anime" : item.mediaType === "movie" ? "Movie" : "TV Show",
+    image: null,
+    score: null,
+    type: item.mediaType as "anime" | "movie" | "tv",
+    year: null,
+    url: `/${item.mediaType === "tv" ? "tvshows" : item.mediaType + "s"}/${item.externalId}`,
+    userRating: item.userRating,
+    status: item.status,
+    isPlaceholder: true, // Flag for UI to show placeholder styling
+  };
+}
+
+// Process items with pagination in mind
+async function processCompletedItems(watchlist: any[], page = 1) {
   // Filter for completed status
   const completedItems = watchlist.filter(item => item.status === "completed");
   
-  // Calculate total
-  const totalItems = completedItems.length;
+  // Sort by completed date if available (most recent first)
+  completedItems.sort((a, b) => {
+    const dateA = a.completedAt || a.updatedAt || a.addedAt || new Date(0);
+    const dateB = b.completedAt || b.updatedAt || b.addedAt || new Date(0);
+    return new Date(dateB).getTime() - new Date(dateA).getTime();
+  });
   
-  // Create smaller batches that we can process in parallel
-  const batches: any[][] = [];
-  for (let i = 0; i < completedItems.length; i += BATCH_SIZE) {
-    batches.push(completedItems.slice(i, i + BATCH_SIZE));
-  }
+  // Calculate pagination
+  const startIndex = (page - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedItems = completedItems.slice(startIndex, endIndex);
   
-  // Process batches of batches in parallel for better performance
-  const processedItems = [];
-  for (let i = 0; i < batches.length; i += MAX_CONCURRENT_BATCHES) {
-    const currentBatches = batches.slice(i, i + MAX_CONCURRENT_BATCHES);
-    
-    // Process these batches in parallel
-    const batchResults = await Promise.all(
-      currentBatches.map(batch => processBatch(batch, fetchItemDetails, 1))
-    );
-    
-    // Combine results from all batches
-    for (const result of batchResults) {
-      processedItems.push(...result);
-    }
-    
-    // Short delay between batch processing to avoid rate limits
-    if (i + MAX_CONCURRENT_BATCHES < batches.length) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-  }
+  // Process all items in this page
+  const processedItems = await processBatch(paginatedItems, fetchItemDetails, 5);
   
-  // Filter out null items (failed fetches)
-  return processedItems.filter(item => item !== null);
+  return {
+    items: processedItems,
+    totalItems: completedItems.length,
+    totalPages: Math.ceil(completedItems.length / ITEMS_PER_PAGE),
+    currentPage: page
+  };
 }
 
-export default async function CompletedAllPage() {
+export default async function CompletedAllPage({ searchParams }) {
   const session = await getServerSession(authOptions);
   
   if (!session || !session.user) {
     redirect("/auth/signin?callbackUrl=/profile/completed/all");
   }
   
+  // Get page from query params
+  const page = parseInt(searchParams?.page || '1', 10);
+  
   let userData;
+  let completedData = { items: [], totalItems: 0, totalPages: 1, currentPage: page };
   let error = null;
-  let completedItems = [];
-  let totalItems = 0;
   
   try {
-    // Set a global timeout for the entire operation
-    const timeoutPromise = new Promise((_, reject) => {
-      const timeoutId = setTimeout(() => {
-        clearTimeout(timeoutId);
-        reject(new Error('Operation timed out after 30 seconds'));
-      }, 30000);
-    });
+    // Get user data
+    userData = await getUserData(session.user.id);
     
-    const fetchDataPromise = async () => {
-      // Get user data
-      userData = await getUserData(session.user.id);
-      
-      if (!userData) {
-        notFound();
-      }
-      
-      // Count total items
-      totalItems = (userData.watchlist || []).filter(item => item.status === "completed").length;
-      
-      // Process all items
-      completedItems = await processAllCompletedItems(userData.watchlist || []);
-      
-      return { completedItems, totalItems };
-    };
+    if (!userData) {
+      notFound();
+    }
     
-    // Race between timeout and data fetching
-    await Promise.race([fetchDataPromise(), timeoutPromise]);
+    // Process items with pagination
+    completedData = await processCompletedItems(userData.watchlist || [], page);
     
   } catch (err) {
     console.error("Error in CompletedAllPage:", err);
@@ -257,13 +217,17 @@ export default async function CompletedAllPage() {
             </div>
           ) : (
             <ProfileCategoryClient 
-              items={completedItems} 
+              items={completedData.items} 
               categoryName="Completed" 
               colorTheme="from-emerald-600 to-teal-600"
               categoryIcon="check"
               userId={session.user.id}
-              totalCount={totalItems}
+              totalCount={completedData.totalItems}
               isFullLoad={true}
+              pagination={{
+                currentPage: completedData.currentPage,
+                totalPages: completedData.totalPages
+              }}
             />
           )}
         </div>
