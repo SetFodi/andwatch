@@ -228,9 +228,9 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                       
                       {/* Menu items */}
                       <div className="py-2">
-                        <MenuLink href="/profile" label="Profile Settings" icon={<ProfileIcon />} />
-                        <MenuLink href="/watchlist" label="My Watchlist" icon={<WatchlistIcon />} />
-                        <MenuLink href="/history" label="Watch History" icon={<HistoryIcon />} />
+                        <MenuLink href="/profile" label="Profile" icon={<ProfileIcon />} />
+                        <MenuLink href="/profile/history" label="Watch History" icon={<HistoryIcon />} />
+                        <MenuLink href="/api/auth/signout" label="Logout" icon={<LogoutIcon />} />
                         
                         {/* Divider */}
                         <div className="my-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-700/50 to-transparent"></div>
