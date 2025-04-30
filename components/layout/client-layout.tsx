@@ -1,3 +1,4 @@
+// components/layout/client-layout.tsx
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
@@ -5,13 +6,26 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import GlobalLoadingProvider from "@/components/ui/global-loading";
+import { usePathname } from "next/navigation";
 
 export default function ClientLayout({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
   const [userData, setUserData] = useState<{
     avatar?: string;
     displayName?: string;
   } | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Handle scroll effects for navbar transformation
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Fetch user data including avatar when session is available
   useEffect(() => {
@@ -49,107 +63,190 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
   // First letter for avatar fallback
   const firstLetter = displayName.charAt(0).toUpperCase();
 
+  // Determine active link
+  const isActive = (path: string) => {
+    if (path === '/' && pathname !== '/') return false;
+    return pathname?.startsWith(path);
+  };
+
   return (
     <GlobalLoadingProvider>
-      {/* Fixed header with enhanced glass effect */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/60 border-b border-gray-800/30 shadow-lg shadow-black/20">
-        <div className="max-w-7xl mx-auto h-16 md:h-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Logo with enhanced animation */}
-          <Link href="/" className="flex items-center group relative">
-            <div className="absolute -inset-2 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl group-hover:blur-md"></div>
-            <svg viewBox="0 0 24 24" className="w-7 h-7 text-indigo-500 mr-2 group-hover:text-indigo-400 transition-colors duration-500 relative z-10 animate-pulse-slow" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200 text-xl font-semibold relative z-10">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-indigo-300 to-purple-500 group-hover:from-indigo-300 group-hover:to-purple-400 transition-all duration-500">and</span>
-              <span className="group-hover:tracking-wide transition-all duration-500">watch</span>
-            </span>
-          </Link>
-
-          {/* Enhanced Navigation */}
-          <nav className="hidden md:flex items-center">
-            <div className="flex items-center space-x-1 bg-gradient-to-r from-gray-900/80 to-gray-800/60 rounded-xl p-1 border border-gray-800/30 shadow-inner shadow-black/10 backdrop-blur-lg">
-              <NavLink href="/anime" icon={<AnimeIcon />} label="Anime" />
-              <NavLink href="/movies" icon={<MovieIcon />} label="Movies" />
-              <NavLink href="/tvshows" icon={<TVIcon />} label="TV Shows" />
-              <NavLink href="/about" icon={<AboutIcon />} label="About" />
-            </div>
-          </nav>
-
-          {/* User Section with enhanced visual effects */}
-          <div className="flex items-center space-x-4">
-            {/* Search Button with pulse animation */}
-            <Link href="/search" className="relative p-2.5 text-gray-400 hover:text-white transition-colors duration-300 rounded-xl hover:bg-gray-800/70 group overflow-hidden">
-              <span className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></span>
-              <svg className="w-5 h-5 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <span className="absolute inset-0 rounded-xl ring-2 ring-indigo-500/0 group-hover:ring-indigo-500/50 group-hover:ring-offset-1 group-hover:ring-offset-black/40 transition-all duration-300 scale-90 group-hover:scale-100"></span>
+      {/* Enhanced header with dynamic scroll behavior */}
+      <header 
+        className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+          scrolled 
+            ? "bg-black/80 backdrop-blur-lg h-16 shadow-xl shadow-black/30" 
+            : "bg-gradient-to-b from-black/80 to-transparent backdrop-blur-md h-20"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+          {/* Left section with logo and animated accent */}
+          <div className="flex items-center">
+            {/* Animated logo with pulsing glow */}
+            <Link href="/" className="group flex items-center relative">
+              <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-indigo-600/20 via-purple-600/10 to-rose-600/20 opacity-0 group-hover:opacity-100 transition-all duration-700 blur-xl group-hover:blur-md"></div>
+              <div className="relative">
+                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-indigo-600/40 to-purple-600/40 opacity-0 group-hover:opacity-100 transition-all duration-500 blur-md"></div>
+                <svg viewBox="0 0 24 24" className="w-8 h-8 text-indigo-500 group-hover:text-indigo-400 transition-all duration-500 relative z-10" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="ml-2 relative z-10">
+                <span className="text-2xl font-light tracking-wide relative">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-fuchsia-400 group-hover:from-indigo-300 group-hover:via-purple-300 group-hover:to-fuchsia-300 transition-all duration-500 font-normal">and</span>
+                  <span className="text-white group-hover:text-gray-200 transition-all duration-500">watch</span>
+                </span>
+                <div className="h-0.5 w-0 group-hover:w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 transition-all duration-700 transform -translate-y-1"></div>
+              </div>
             </Link>
 
-            {status === "authenticated" ? (
-              <div className="flex items-center">
-                {/* Profile Menu Dropdown with enhanced animations */}
-                <div className="relative group">
-                  <button className="flex items-center focus:outline-none">
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-700/50 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/30 transition-all duration-500 transform group-hover:scale-105">
-                      {avatarUrl ? (
-                        <Image 
-                          src={avatarUrl} 
-                          alt={displayName} 
-                          width={36} 
-                          height={36} 
-                          className="object-cover w-full h-full"
-                          onError={(e) => {
-                            // On error, revert to initials
-                            console.error("Error loading avatar", e);
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <span className="text-sm font-medium text-white">
-                          {firstLetter}
-                        </span>
-                      )}
-                    </div>
-                  </button>
+            {/* Main Navigation with animated indicators */}
+            <nav className="hidden lg:flex ml-12">
+              <div className="flex items-center space-x-1">
+                <NavLink 
+                  href="/" 
+                  isActive={pathname === '/'} 
+                  label="Home" 
+                  icon={<HomeIcon />} 
+                />
+                <NavLink 
+                  href="/anime" 
+                  isActive={isActive('/anime')} 
+                  label="Anime" 
+                  icon={<AnimeIcon />} 
+                  color="from-pink-600 to-rose-500"
+                />
+                <NavLink 
+                  href="/movies" 
+                  isActive={isActive('/movies')} 
+                  label="Movies" 
+                  icon={<MovieIcon />} 
+                  color="from-amber-600 to-orange-500"
+                />
+                <NavLink 
+                  href="/tvshows" 
+                  isActive={isActive('/tvshows')} 
+                  label="TV Shows" 
+                  icon={<TVIcon />} 
+                  color="from-sky-600 to-blue-500"
+                />
+                <NavLink 
+                  href="/about" 
+                  isActive={isActive('/about')} 
+                  label="About" 
+                  icon={<AboutIcon />} 
+                />
+              </div>
+            </nav>
+          </div>
 
-                  {/* Enhanced Dropdown Menu with animations */}
-                  <div className="absolute right-0 top-full mt-2 w-64 bg-gradient-to-b from-gray-900/95 to-gray-950/95 border border-gray-800/70 rounded-xl shadow-2xl shadow-black/40 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-y-0 translate-y-2 z-50 backdrop-blur-md overflow-hidden scale-95 group-hover:scale-100 origin-top-right">
-                    <div className="py-3 px-4 border-b border-gray-800/50 flex items-center space-x-3 bg-gradient-to-r from-indigo-900/20 to-purple-900/20">
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-700/50 flex items-center justify-center shadow-inner shadow-black/10">
-                        {avatarUrl ? (
-                          <Image 
-                            src={avatarUrl} 
-                            alt={displayName} 
-                            width={40} 
-                            height={40} 
-                            className="object-cover w-full h-full"
-                          />
-                        ) : (
-                          <span className="text-sm font-medium text-white">
-                            {firstLetter}
-                          </span>
-                        )}
+          {/* Right section with search and user menu */}
+          <div className="flex items-center space-x-5">
+            {/* Enhanced Search Button with glow effects */}
+            <Link href="/search" className="relative p-2 text-gray-400 hover:text-white transition-colors duration-300 group">
+              <div className="absolute inset-0 rounded-full bg-gray-800/0 group-hover:bg-gray-800/70 transition-all duration-300"></div>
+              <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-500">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-600/20 to-purple-600/20 blur-md"></div>
+              </div>
+              <svg className="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </Link>
+
+            {/* User Section with enhanced dropdown */}
+            {status === "authenticated" ? (
+              <div className="relative group z-30">
+                <button 
+                  className="flex items-center focus:outline-none" 
+                  aria-label="Open user menu"
+                  aria-expanded={mobileMenuOpen}
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-600 border border-indigo-700/50 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/30 transition-all duration-500 transform group-hover:scale-105 relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/80 to-violet-600/80 group-hover:from-indigo-500/80 group-hover:to-violet-500/80 transition-all duration-300"></div>
+                    {avatarUrl ? (
+                      <Image 
+                        src={avatarUrl} 
+                        alt={displayName} 
+                        width={40} 
+                        height={40} 
+                        className="object-cover w-full h-full z-10"
+                        onError={(e) => {
+                          // On error, revert to initials
+                          console.error("Error loading avatar", e);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <span className="text-sm font-medium text-white relative z-10">
+                        {firstLetter}
+                      </span>
+                    )}
+                    <div className="absolute inset-0 rounded-full ring-0 ring-indigo-500/0 group-hover:ring-2 group-hover:ring-indigo-500/50 transition-all duration-300"></div>
+                  </div>
+                </button>
+
+                {/* Enhanced Dropdown Menu with better animations */}
+                <div className="absolute right-0 top-full mt-3 w-72 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 scale-95 group-hover:scale-100 origin-top-right">
+                  <div className="relative">
+                    {/* Decorative gradient background */}
+                    <div className="absolute -inset-1.5 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-xl blur-lg"></div>
+                    <div className="relative bg-gray-900/95 backdrop-blur-xl rounded-xl shadow-2xl shadow-black/40 border border-gray-800/70 overflow-hidden">
+                      {/* User info section with decorative background */}
+                      <div className="relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 to-purple-600/10"></div>
+                        <div className="absolute -top-32 -right-32 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl"></div>
+                        <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl"></div>
+                        <div className="py-4 px-5 relative">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-700/50 flex items-center justify-center shadow-inner shadow-black/10">
+                              {avatarUrl ? (
+                                <Image 
+                                  src={avatarUrl} 
+                                  alt={displayName} 
+                                  width={48} 
+                                  height={48} 
+                                  className="object-cover w-full h-full"
+                                />
+                              ) : (
+                                <span className="text-base font-medium text-white">
+                                  {firstLetter}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-white">{displayName}</span>
+                              <span className="text-xs text-gray-400 truncate max-w-[170px]">{session?.user?.email}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Decorative divider */}
+                        <div className="h-px bg-gradient-to-r from-transparent via-gray-700/50 to-transparent"></div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-white">{displayName}</span>
-                        <span className="text-xs text-gray-400 truncate">{session?.user?.email}</span>
-                      </div>
-                    </div>
-                    <div className="py-2">
-                      <MenuLink href="/profile" label="Profile" icon={<ProfileIcon />} />
-                      <div className="px-3 pt-2 mt-1">
-                        <form action="/api/auth/signout" method="post" className="w-full">
-                          <button type="submit" className="w-full group flex items-center space-x-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-950/30 rounded-lg transition-all duration-300 relative overflow-hidden">
-                            <span className="absolute inset-0 bg-gradient-to-r from-red-900/0 via-red-900/0 to-red-900/0 group-hover:from-red-900/10 group-hover:via-red-900/20 group-hover:to-red-900/10 transition-all duration-500"></span>
-                            <svg className="w-4 h-4 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            <span className="relative z-10">Sign Out</span>
-                          </button>
-                        </form>
+                      
+                      {/* Menu items */}
+                      <div className="py-2">
+                        <MenuLink href="/profile" label="Profile Settings" icon={<ProfileIcon />} />
+                        <MenuLink href="/watchlist" label="My Watchlist" icon={<WatchlistIcon />} />
+                        <MenuLink href="/history" label="Watch History" icon={<HistoryIcon />} />
+                        
+                        {/* Divider */}
+                        <div className="my-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-700/50 to-transparent"></div>
+                        
+                        {/* Sign out button with hover effects */}
+                        <div className="px-3 pt-1 pb-2">
+                          <form action="/api/auth/signout" method="post" className="w-full">
+                            <button type="submit" className="w-full group flex items-center space-x-3 px-4 py-2.5 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-900/20 rounded-lg transition-all duration-300 relative overflow-hidden">
+                              <span className="absolute inset-0 bg-gradient-to-r from-rose-900/0 via-rose-900/0 to-rose-900/0 group-hover:from-rose-900/10 group-hover:via-rose-900/20 group-hover:to-rose-900/10 transition-all duration-500"></span>
+                              <svg className="w-4 h-4 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                              </svg>
+                              <span className="relative z-10">Sign Out</span>
+                            </button>
+                          </form>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -159,50 +256,159 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
               <div className="flex items-center space-x-3">
                 <Link
                   href="/auth/signin"
-                  className="text-sm px-4 py-2 rounded-xl bg-gray-800/70 hover:bg-gray-700/70 border border-gray-700/40 hover:border-indigo-500/50 text-white hover:text-white transition-all duration-300 relative group overflow-hidden"
+                  className="text-sm px-5 py-2 rounded-full bg-gray-800/70 hover:bg-gray-700/70 border border-gray-700/40 hover:border-indigo-500/50 text-white hover:text-white transition-all duration-300 relative group overflow-hidden"
                 >
                   <span className="absolute inset-0 bg-gradient-to-r from-indigo-600/0 to-indigo-600/0 group-hover:from-indigo-600/10 group-hover:to-indigo-600/20 transition-all duration-500"></span>
                   <p className="text-white relative z-10">Sign In</p>
                 </Link>
                 <Link
                   href="/auth/signup"
-                  className="hidden sm:flex text-sm px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md hover:shadow-indigo-500/30 transition-all duration-300 relative group overflow-hidden"
+                  className="hidden sm:flex text-sm px-5 py-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md hover:shadow-indigo-500/30 transition-all duration-300 relative group overflow-hidden"
                 >
                   <span className="absolute inset-0 bg-gradient-to-r from-white/0 to-white/0 group-hover:from-white/5 group-hover:to-white/10 transition-all duration-500"></span>
-                  <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <span className="absolute -inset-1 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                     <span className="absolute -inset-1 bg-gradient-to-r from-indigo-600/0 to-purple-600/0 group-hover:from-indigo-600/20 group-hover:to-purple-600/20 blur-xl transition-all duration-500"></span>
                   </span>
                   <p className="text-white relative z-10">Sign Up</p>
                 </Link>
               </div>
             )}
+
+            {/* Mobile menu button with animated hamburger */}
+            <button 
+              className="lg:hidden relative z-40 p-1.5 rounded-md focus:outline-none"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+            >
+              <div className="w-6 h-6 flex flex-col justify-center items-center">
+                <span className={`block w-5 h-0.5 bg-gray-300 transition-all duration-300 ease-out ${mobileMenuOpen ? 'rotate-45 translate-y-0.5' : '-translate-y-1'}`}></span>
+                <span className={`block w-5 h-0.5 bg-gray-300 transition-all duration-300 ease-out ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'}`}></span>
+                <span className={`block w-5 h-0.5 bg-gray-300 transition-all duration-300 ease-out ${mobileMenuOpen ? '-rotate-45 -translate-y-0.5' : 'translate-y-1'}`}></span>
+              </div>
+            </button>
+          </div>
+
+          {/* Mobile Navigation Overlay with blur effects */}
+          <div 
+            className={`lg:hidden fixed inset-0 bg-black/95 backdrop-blur-xl z-30 transition-all duration-500 ${
+              mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+            }`}
+          >
+            <div className="flex flex-col h-full pt-20 px-6 pb-16 overflow-y-auto">
+              <nav className="flex-1 flex flex-col justify-center space-y-2">
+                <MobileNavLink 
+                  href="/"
+                  label="Home"
+                  icon={<HomeIcon />}
+                  isActive={pathname === '/'}
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+                <MobileNavLink
+                  href="/anime"
+                  label="Anime"
+                  icon={<AnimeIcon />}
+                  isActive={isActive('/anime')}
+                  color="bg-gradient-to-r from-pink-600 to-rose-500"
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+                <MobileNavLink
+                  href="/movies"
+                  label="Movies"
+                  icon={<MovieIcon />}
+                  isActive={isActive('/movies')}
+                  color="bg-gradient-to-r from-amber-600 to-orange-500"
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+                <MobileNavLink
+                  href="/tvshows"
+                  label="TV Shows"
+                  icon={<TVIcon />}
+                  isActive={isActive('/tvshows')}
+                  color="bg-gradient-to-r from-sky-600 to-blue-500"
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+                <MobileNavLink
+                  href="/search"
+                  label="Search"
+                  icon={<SearchIcon />}
+                  isActive={isActive('/search')}
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+                <MobileNavLink
+                  href="/about"
+                  label="About"
+                  icon={<AboutIcon />}
+                  isActive={isActive('/about')}
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+                
+                {/* Decorative divider */}
+                <div className="w-16 h-px bg-gradient-to-r from-transparent via-indigo-500 to-transparent mx-auto my-4"></div>
+                
+                {status === "authenticated" ? (
+                  <>
+                    <MobileNavLink
+                      href="/profile"
+                      label="Profile"
+                      icon={<ProfileIcon />}
+                      isActive={isActive('/profile')}
+                      onClick={() => setMobileMenuOpen(false)}
+                    />
+                    <MobileNavLink
+                      href="/watchlist"
+                      label="My Watchlist"
+                      icon={<WatchlistIcon />} 
+                      isActive={isActive('/watchlist')}
+                      onClick={() => setMobileMenuOpen(false)}
+                    />
+                    <div className="pt-4">
+                      <form action="/api/auth/signout" method="post" className="w-full">
+                        <button 
+                          type="submit" 
+                          className="w-full py-3 px-4 rounded-lg flex items-center justify-center space-x-2 bg-rose-900/20 text-rose-400"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          <span>Sign Out</span>
+                        </button>
+                      </form>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col space-y-3 pt-4">
+                    <Link
+                      href="/auth/signin"
+                      className="w-full py-3 rounded-lg flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-white transition-all duration-300"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/auth/signup"
+                      className="w-full py-3 rounded-lg flex items-center justify-center bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md transition-all duration-300"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                )}
+              </nav>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Mobile Navigation Bar with enhanced styling */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-gray-800/40 bg-black/90 backdrop-blur-xl z-50 shadow-lg shadow-black/30">
-        <div className="grid grid-cols-5 h-16">
-          <MobileNavLink href="/" icon={<HomeIcon />} label="Home" />
-          <MobileNavLink href="/anime" icon={<AnimeIcon />} label="Anime" />
-          <MobileNavLink href="/movies" icon={<MovieIcon />} label="Movies" />
-          <MobileNavLink href="/tvshows" icon={<TVIcon />} label="TV Shows" />
-          <MobileNavLink 
-            href={status === "authenticated" ? "/profile" : "/auth/signin"} 
-            icon={status === "authenticated" ? <ProfileIcon /> : <SignInIcon />} 
-            label={status === "authenticated" ? "Profile" : "Sign In"} 
-          />
-        </div>
-      </div>
-
-      {/* Add bottom padding on mobile for the fixed navigation */}
-      <main className="flex-1 md:pb-0 pb-16">
+      {/* Main content with padding to account for fixed header */}
+      <main className="pt-20 flex-1">
         {children}
       </main>
 
-      {/* Enhanced Footer with animated elements */}
+      {/* Keep the original footer */}
       <footer className="border-t border-gray-900/50 bg-gradient-to-b from-black/60 to-black/90 backdrop-blur-sm py-5 relative overflow-hidden">
-        {/* Enhanced decorative elements */}
+        {/* Decorative elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-indigo-500/30 blur-3xl animate-blob-slow"></div>
           <div className="absolute -bottom-32 -left-32 w-64 h-64 rounded-full bg-purple-500/30 blur-3xl animate-blob-slow animation-delay-2000"></div>
@@ -290,49 +496,107 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
   );
 }
 
-// Desktop Navigation Link Component with enhanced hover effects
-function NavLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
+// Enhanced Desktop Navigation Link Component with animations
+function NavLink({ href, icon, label, isActive, color = "from-indigo-600 to-violet-500" }: { 
+  href: string; 
+  icon: React.ReactNode; 
+  label: string;
+  isActive: boolean;
+  color?: string;
+}) {
   return (
     <Link 
       href={href}
-      className="flex items-center px-4 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-gray-800/70 transition-all duration-300 relative group overflow-hidden"
+      className={`relative px-4 py-2 rounded-full text-sm transition-all duration-300 mx-1 group overflow-hidden flex items-center ${
+        isActive 
+          ? `text-white bg-gradient-to-r ${color}` 
+          : 'text-gray-400 hover:text-white'
+      }`}
     >
-      <span className="absolute inset-0 bg-gradient-to-r from-indigo-600/0 to-indigo-600/0 group-hover:from-indigo-600/10 group-hover:to-indigo-600/20 transition-all duration-500 rounded-lg"></span>
-      <span className="mr-2 transform group-hover:scale-110 transition-transform duration-300">{icon}</span>
-      <span className="group-hover:translate-x-1 transition-transform duration-300">{label}</span>
+      {/* Active indicator animations */}
+      {!isActive && (
+        <span className="absolute inset-0 bg-gray-800/0 group-hover:bg-gray-800/60 transition-all duration-300 rounded-full"></span>
+      )}
+      <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-1/2 transition-all duration-500"></span>
+      <span className="absolute bottom-0 right-1/2 transform translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 group-hover:w-1/2 transition-all duration-500"></span>
+      
+      {/* Icon with subtle animation */}
+      <span className={`mr-2 transition-transform duration-300 ${isActive ? '' : 'group-hover:scale-110'}`}>
+        {icon}
+      </span>
+      
+      <span className={`transition-all duration-300 ${isActive ? 'font-medium' : 'group-hover:font-medium'}`}>
+        {label}
+      </span>
+      
+      {/* Animated glow effect on hover */}
+      {isActive && (
+        <span className="absolute inset-0 -z-10 opacity-25 bg-gradient-to-r from-white/5 to-white/10 rounded-full blur-sm"></span>
+      )}
     </Link>
   );
 }
 
-// Mobile Navigation Link Component with enhanced effects
-function MobileNavLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
+// Enhanced Mobile Navigation Link
+function MobileNavLink({ 
+  href, 
+  icon, 
+  label, 
+  isActive,
+  color,
+  onClick
+}: { 
+  href: string; 
+  icon: React.ReactNode; 
+  label: string;
+  isActive: boolean;
+  color?: string;
+  onClick: () => void;
+}) {
   return (
     <Link 
       href={href} 
-      className="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-400 transition-all duration-300 relative group"
+      className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base relative overflow-hidden transition-all duration-300 ${
+        isActive 
+          ? `${color || 'bg-gradient-to-r from-indigo-600 to-violet-500'} text-white`
+          : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
+      }`}
+      onClick={onClick}
     >
-      <span className="absolute inset-0 bg-gradient-to-b from-indigo-600/0 to-indigo-600/0 group-hover:from-indigo-600/5 group-hover:to-indigo-600/10 opacity-0 group-hover:opacity-100 transition-all duration-500"></span>
-      <span className="mb-1 transform group-hover:scale-110 transition-transform duration-300 relative z-10">{icon}</span>
-      <span className="text-xs relative z-10 transition-all duration-300 group-hover:font-medium">{label}</span>
+      <span className={`transition-transform duration-300 ${isActive ? '' : 'group-hover:scale-110'}`}>
+        {icon}
+      </span>
+      <span className={`${isActive ? 'font-medium' : ''}`}>{label}</span>
+      
+      {/* Right arrow for active item */}
+      {isActive && (
+        <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      )}
     </Link>
   );
 }
 
-// Dropdown Menu Link Component with enhanced hover effects
+// Enhanced Menu Link
 function MenuLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
   return (
     <Link 
       href={href} 
-      className="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800/60 mx-3 rounded-lg transition-all duration-300 group relative overflow-hidden"
+      className="flex items-center px-4 py-2.5 mx-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800/70 rounded-lg transition-all duration-300 group relative overflow-hidden"
     >
       <span className="absolute inset-0 bg-gradient-to-r from-indigo-600/0 to-indigo-600/0 group-hover:from-indigo-600/10 group-hover:to-indigo-600/20 transition-all duration-500"></span>
-      <span className="mr-3 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300 transform group-hover:scale-110 transition-transform">{icon}</span>
-      <span className="group-hover:translate-x-1 transition-transform duration-300">{label}</span>
+      <span className="mr-3 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300 transform group-hover:scale-110">
+        {icon}
+      </span>
+      <span className="group-hover:translate-x-1 transition-transform duration-300">
+        {label}
+      </span>
     </Link>
   );
 }
 
-// Icons remain the same
+// Icons
 function HomeIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -340,13 +604,15 @@ function HomeIcon() {
     </svg>
   );
 }
+
 function TVIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 20h12M9 16h6M4 4h16v12H4z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
     </svg>
   );
 }
+
 function AnimeIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -379,11 +645,26 @@ function ProfileIcon() {
   );
 }
 
-function SignInIcon() {
+function WatchlistIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
   );
 }
 
+function HistoryIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+  );
+}
