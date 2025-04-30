@@ -1,8 +1,7 @@
-// app/profile/completed/all/page.tsx
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../api/auth/[...nextauth]/route";
 import { notFound, redirect } from "next/navigation";
-import connectDB, { checkDbConnection } from "../../../../lib/db";
+import connectDB from "../../../../lib/db";
 import { User } from "../../../../lib/models/User";
 import { animeApi, tmdbApi } from "../../../../lib/services/api";
 import ProfileCategoryClient from "../../../../components/ProfileCategoryClient";
@@ -15,7 +14,7 @@ export const revalidate = 7200; // 2 hours
 // Pagination configuration
 const ITEMS_PER_PAGE = 20; // Match this to your grid (5 columns x 4 rows)
 
-// Optimized fetch with single-function retry logic
+// Optimized fetch with retry logic
 async function fetchWithRetry(fetchFn) {
   const MAX_RETRIES = 2;
   
@@ -23,8 +22,6 @@ async function fetchWithRetry(fetchFn) {
     try {
       return await fetchFn();
     } catch (error) {
-      console.error(`Fetch attempt ${attempt + 1}/${MAX_RETRIES + 1} failed:`, error);
-      
       if (attempt < MAX_RETRIES) {
         await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
       } else {
@@ -34,7 +31,7 @@ async function fetchWithRetry(fetchFn) {
   }
 }
 
-// More efficient user data fetching
+// Efficient user data fetching
 async function getUserData(userId: string) {
   try {
     await connectDB();
@@ -52,7 +49,25 @@ async function getUserData(userId: string) {
   }
 }
 
-// Simplified item details fetcher that returns placeholder on failure
+// Placeholder for failed requests
+function createPlaceholder(item: any) {
+  return {
+    id: item.externalId,
+    title: item.mediaType === "anime" ? "Anime" : item.mediaType === "movie" ? "Movie" : "TV Show",
+    image: null,
+    score: null,
+    type: item.mediaType as "anime" | "movie" | "tv",
+    year: null,
+    url: `/${item.mediaType === "tv" ? "tvshows" : item.mediaType + "s"}/${item.externalId}`,
+    userRating: item.userRating,
+    status: item.status,
+    addedAt: item.addedAt,
+    updatedAt: item.updatedAt,
+    isPlaceholder: true, // Flag for UI to show placeholder styling
+  };
+}
+
+// Item details fetcher that returns placeholder on failure
 async function fetchItemDetails(item: any) {
   return getOrSetCache(
     item.externalId,
@@ -76,6 +91,7 @@ async function fetchItemDetails(item: any) {
             addedAt: item.addedAt,
             updatedAt: item.updatedAt || item.addedAt,
             completedAt: item.completedAt || item.updatedAt || item.addedAt,
+            lastModified: item.updatedAt || item.addedAt,
             genres: (animeDetails.data.genres?.map((g: any) => g.name) || []).slice(0, 5), 
           };
         } else if (item.mediaType === "movie") {
@@ -95,6 +111,7 @@ async function fetchItemDetails(item: any) {
             addedAt: item.addedAt,
             updatedAt: item.updatedAt || item.addedAt,
             completedAt: item.completedAt || item.updatedAt || item.addedAt,
+            lastModified: item.updatedAt || item.addedAt,
             genres: (movieDetails.genres?.map((g: any) => g.name) || []).slice(0, 5),
           };
         } else if (item.mediaType === "tv") {
@@ -114,6 +131,7 @@ async function fetchItemDetails(item: any) {
             addedAt: item.addedAt,
             updatedAt: item.updatedAt || item.addedAt,
             completedAt: item.completedAt || item.updatedAt || item.addedAt,
+            lastModified: item.updatedAt || item.addedAt,
             genres: (tvDetails.genres?.map((g: any) => g.name) || []).slice(0, 5),
           };
         }
@@ -126,51 +144,35 @@ async function fetchItemDetails(item: any) {
   );
 }
 
-// Create placeholder to maintain grid layout
-function createPlaceholder(item: any) {
-  return {
-    id: item.externalId,
-    title: item.mediaType === "anime" ? "Anime" : item.mediaType === "movie" ? "Movie" : "TV Show",
-    image: null,
-    score: null,
-    type: item.mediaType as "anime" | "movie" | "tv",
-    year: null,
-    url: `/${item.mediaType === "tv" ? "tvshows" : item.mediaType + "s"}/${item.externalId}`,
-    userRating: item.userRating,
-    status: item.status,
-    isPlaceholder: true, // Flag for UI to show placeholder styling
-  };
-}
-
-// Process items with pagination in mind
-async function processCompletedItems(watchlist: any[], page = 1) {
-  // Filter for completed status
-  const completedItems = watchlist.filter(item => item.status === "completed");
+// Process history items with pagination
+async function processWatchHistory(watchlist: any[], page = 1) {
+  // Include all items that have been updated or have activity
+  const historyItems = watchlist.filter(item => item.updatedAt || item.completedAt);
   
-  // Sort by completed date if available (most recent first)
-  completedItems.sort((a, b) => {
-    const dateA = a.completedAt || a.updatedAt || a.addedAt || new Date(0);
-    const dateB = b.completedAt || b.updatedAt || b.addedAt || new Date(0);
-    return new Date(dateB).getTime() - new Date(dateA).getTime();
+  // Sort by most recent activity first
+  historyItems.sort((a, b) => {
+    const dateA = new Date(a.updatedAt || a.completedAt || a.addedAt).getTime();
+    const dateB = new Date(b.updatedAt || b.completedAt || b.addedAt).getTime();
+    return dateB - dateA; // Descending order (newest first)
   });
   
   // Calculate pagination
   const startIndex = (page - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedItems = completedItems.slice(startIndex, endIndex);
+  const paginatedItems = historyItems.slice(startIndex, endIndex);
   
   // Process all items in this page
   const processedItems = await processBatch(paginatedItems, fetchItemDetails, 5);
   
   return {
     items: processedItems,
-    totalItems: completedItems.length,
-    totalPages: Math.ceil(completedItems.length / ITEMS_PER_PAGE),
+    totalItems: historyItems.length,
+    totalPages: Math.ceil(historyItems.length / ITEMS_PER_PAGE),
     currentPage: page
   };
 }
 
-export default async function CompletedAllPage({ 
+export default async function WatchHistoryAllPage({ 
   searchParams = {} 
 }: { 
   searchParams?: { page?: string } 
@@ -178,15 +180,15 @@ export default async function CompletedAllPage({
   const session = await getServerSession(authOptions);
   
   if (!session || !session.user) {
-    redirect("/auth/signin?callbackUrl=/profile/completed/all");
+    redirect("/auth/signin?callbackUrl=/profile/history/all");
   }
   
-  // Fix page param handling with proper defaults and type checking
+  // Handle page param with proper defaults
   const pageParam = searchParams?.page || '1';
   const page = !isNaN(parseInt(pageParam)) ? parseInt(pageParam) : 1;
   
   let userData;
-  let completedData = { items: [], totalItems: 0, totalPages: 1, currentPage: page };
+  let historyData = { items: [], totalItems: 0, totalPages: 1, currentPage: page };
   let error = null;
   
   try {
@@ -198,11 +200,11 @@ export default async function CompletedAllPage({
     }
     
     // Process items with pagination
-    completedData = await processCompletedItems(userData.watchlist || [], page);
+    historyData = await processWatchHistory(userData.watchlist || [], page);
     
   } catch (err) {
-    console.error("Error in CompletedAllPage:", err);
-    error = err.message || "An error occurred while loading your completed list.";
+    console.error("Error in WatchHistoryAllPage:", err);
+    error = err.message || "An error occurred while loading your watch history.";
   }
   
   return (
@@ -222,16 +224,17 @@ export default async function CompletedAllPage({
             </div>
           ) : (
             <ProfileCategoryClient 
-              items={completedData.items || []} 
-              categoryName="Completed" 
-              colorTheme="from-emerald-600 to-teal-600"
-              categoryIcon="check"
+              items={historyData.items || []} 
+              categoryName="Watch History" 
+              colorTheme="from-amber-600 to-orange-600"
+              categoryIcon="history"
               userId={session.user.id}
-              totalCount={completedData.totalItems}
+              totalCount={historyData.totalItems}
               isFullLoad={true}
-              currentPage={completedData.currentPage}
-              totalPages={completedData.totalPages}
+              currentPage={historyData.currentPage}
+              totalPages={historyData.totalPages}
               isPaginated={true}
+              isHistory={true}
             />
           )}
         </div>

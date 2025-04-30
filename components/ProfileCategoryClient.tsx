@@ -1,13 +1,13 @@
-// components/ProfileCategoryClient.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import MediaCard from "../app/profile/MediaCard";
+import HistoryCard from "./HistoryCard";
 import EmptyState from "../app/profile/EmptyState";
 
-type CategoryIcon = "play" | "calendar" | "check";
+type CategoryIcon = "play" | "calendar" | "check" | "history";
 
 interface MediaItem {
   id: string | number;
@@ -22,6 +22,7 @@ interface MediaItem {
   addedAt?: string | Date;
   updatedAt?: string | Date;
   completedAt?: string | Date;
+  lastModified?: string | Date;
   genres?: string[];
   episodes?: number;
   progress?: number;
@@ -49,6 +50,7 @@ interface ProfileCategoryClientProps {
   fullLoadUrl?: string;
   isFullLoad?: boolean;
   pagination?: PaginationInfo;
+  isHistory?: boolean;
 }
 
 // Helper function to get category icon
@@ -73,6 +75,12 @@ function getCategoryIcon(iconName: CategoryIcon) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       );
+    case "history":
+      return (props: React.SVGProps<SVGSVGElement>) => (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
   }
 }
 
@@ -85,6 +93,8 @@ function getCategoryDescription(category: string, count: number): string {
       return `${count} titles you're planning to watch`;
     case "Completed":
       return `${count} titles you've completed watching`;
+    case "Watch History":
+      return `${count} titles in your watch history`;
     default:
       return `${count} titles in this list`;
   }
@@ -103,14 +113,15 @@ export default function ProfileCategoryClient({
   displayLoadMoreLink = false,
   fullLoadUrl,
   isFullLoad = false,
-  pagination
+  pagination,
+  isHistory = false
 }: ProfileCategoryClientProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [loadedItems, setLoadedItems] = useState<MediaItem[]>([]);
   const [loadProgress, setLoadProgress] = useState(0);
   const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
-  const [sortOption, setSortOption] = useState<string>("recently_updated");
+  const [sortOption, setSortOption] = useState<string>(isHistory ? "recently_modified" : "recently_updated");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterGenre, setFilterGenre] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -250,6 +261,13 @@ export default function ProfileCategoryClient({
                 return bCompletedTime - aCompletedTime;
               }
               return 0;
+            case "recently_modified":
+              // For history items, sort by most recent activity
+              const aModifiedTime = a.lastModified || a.updatedAt || a.completedAt || a.addedAt ? 
+                new Date(a.lastModified || a.updatedAt || a.completedAt || a.addedAt).getTime() : 0;
+              const bModifiedTime = b.lastModified || b.updatedAt || b.completedAt || b.addedAt ? 
+                new Date(b.lastModified || b.updatedAt || b.completedAt || b.addedAt).getTime() : 0;
+              return bModifiedTime - aModifiedTime;
             case "recently_updated":
             default:
               const aUpdatedTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
@@ -268,7 +286,7 @@ export default function ProfileCategoryClient({
       // Set filtered items to empty array in case of error
       setFilteredItems([]);
     }
-  }, [loadedItems, sortOption, filterType, filterGenre, searchQuery, categoryName, isLoading]);
+  }, [loadedItems, sortOption, filterType, filterGenre, searchQuery, categoryName, isLoading, isHistory]);
 
   // Use effect to apply filters when dependencies change
   useEffect(() => {
@@ -281,7 +299,7 @@ export default function ProfileCategoryClient({
   // Navigate to specific page
   const navigateToPage = (page: number) => {
     if (page < 1 || page > paginationTotalPages) return;
-    router.push(`/profile/${categoryName.toLowerCase()}?page=${page}`);
+    router.push(`/profile/${isHistory ? 'history' : categoryName.toLowerCase()}?page=${page}`);
   };
 
   // If we've detected a connection error
@@ -317,7 +335,7 @@ export default function ProfileCategoryClient({
             style={{ width: `${loadProgress}%` }}
           ></div>
         </div>
-        <p className="text-white text-lg font-medium mb-2">Loading your {categoryName.toLowerCase()} list</p>
+        <p className="text-white text-lg font-medium mb-2">Loading your {categoryName.toLowerCase()}</p>
         <p className="text-gray-400">
           {loadedItems.length} of {items.length} items ({loadProgress}%)
         </p>
@@ -483,10 +501,20 @@ export default function ProfileCategoryClient({
                 className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: `right 0.5rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.5em 1.5em`, paddingRight: `2.5rem` }}
               >
-                <option value="recently_updated">Recently Updated</option>
-                <option value="recently_added">Recently Added</option>
-                {categoryName === "Completed" && (
-                  <option value="recently_completed">Recently Completed</option>
+                {isHistory ? (
+                  <>
+                    <option value="recently_modified">Most Recent Activity</option>
+                    <option value="recently_updated">Recently Updated</option>
+                    <option value="recently_added">Recently Added</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="recently_updated">Recently Updated</option>
+                    <option value="recently_added">Recently Added</option>
+                    {categoryName === "Completed" && (
+                      <option value="recently_completed">Recently Completed</option>
+                    )}
+                  </>
                 )}
                 <option value="title_asc">Title (A-Z)</option>
                 <option value="title_desc">Title (Z-A)</option>
@@ -647,7 +675,11 @@ export default function ProfileCategoryClient({
                 key={`${item?.id || index}-${index}`}
                 className="opacity-100" 
               >
-                {item && <MediaCard item={item} />}
+                {item && (
+                  isHistory 
+                    ? <HistoryCard item={item} /> 
+                    : <MediaCard item={item} />
+                )}
               </div>
             ))}
           </div>
