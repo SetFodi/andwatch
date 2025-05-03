@@ -18,7 +18,6 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Handle scroll effects for navbar transformation
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -221,7 +220,7 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                             </div>
                           </div>
                         </div>
-                        
+                              
                         {/* Decorative divider */}
                         <div className="h-px bg-gradient-to-r from-transparent via-gray-700/50 to-transparent"></div>
                       </div>
