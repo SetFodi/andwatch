@@ -27,13 +27,41 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Prefetch common routes for faster navigation
+  // Enhanced prefetching for faster navigation
   useEffect(() => {
     // Prefetch main navigation routes
-    const commonRoutes = ['/anime', '/movies', '/tvshows', '/profile', '/search'];
+    const commonRoutes = [
+      '/',
+      '/anime',
+      '/movies',
+      '/tvshows',
+      '/profile',
+      '/profile/history',
+      '/profile/completed',
+      '/profile/watching',
+      '/profile/planning',
+      '/search'
+    ];
+
+    // Immediate prefetch for primary routes
     commonRoutes.forEach(route => {
       router.prefetch(route);
     });
+
+    // Prefetch secondary routes after a short delay
+    const secondaryRoutes = [
+      '/about',
+      '/profile/edit',
+      '/watchlist'
+    ];
+
+    const timer = setTimeout(() => {
+      secondaryRoutes.forEach(route => {
+        router.prefetch(route);
+      });
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, [router]);
 
   // Fetch user data including avatar when session is available

@@ -37,16 +37,14 @@ export default function GlobalLoadingProvider({
     // Record navigation start time
     navigationStartTime.current = Date.now();
 
-    // Show loading indicator after a very short delay (50ms instead of 150ms)
-    // This makes navigation feel more responsive while still preventing flashes for quick loads
-    loadingTimeoutRef.current = setTimeout(() => {
-      setIsLoading(true);
+    // Show loading indicator immediately for better perceived performance
+    // This makes navigation feel instant while still preventing flashes for quick loads
+    setIsLoading(true);
 
-      // Auto-hide after 2.5 seconds (reduced from 3s) if something goes wrong
-      hideTimeoutRef.current = setTimeout(() => {
-        setIsLoading(false);
-      }, 2500);
-    }, 50);
+    // Auto-hide after 2 seconds if something goes wrong
+    hideTimeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
 
     return () => {
       if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
@@ -77,10 +75,8 @@ export default function GlobalLoadingProvider({
         activeFetchCounter++;
         setPendingFetches(count => count + 1);
 
-        // Show loading faster for API calls (reduced from 300ms to 100ms)
-        if (activeFetchCounter === 1 || Date.now() - lastFetchCompletedAt > 100) {
-          setIsLoading(true);
-        }
+        // Show loading immediately for API calls to improve perceived performance
+        setIsLoading(true);
       }
 
       try {
@@ -135,8 +131,8 @@ function ThemedLoadingIndicator() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.15 }} // Even faster fade in/out
-      className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center"
+      transition={{ duration: 0.1 }} // Ultra-fast fade in/out for better responsiveness
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center"
     >
       <div className="flex flex-col items-center max-w-md px-6">
         {/* Themed logo animation */}
@@ -239,12 +235,12 @@ function ThemedLoadingIndicator() {
           <div className="w-full h-1.5 bg-gray-800/80 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-indigo-600 via-purple-500 to-indigo-600 background-animate"
-              initial={{ width: "0%" }}
-              animate={{ width: "100%" }}
+              initial={{ width: "15%" }}
+              animate={{ width: "95%" }}
               transition={{
-                duration: 1.2,
+                duration: 0.8,
                 repeat: Infinity,
-                ease: "easeInOut"
+                ease: "easeOut"
               }}
               style={{ boxShadow: '0 0 10px rgba(168, 85, 247, 0.7)' }}
             />

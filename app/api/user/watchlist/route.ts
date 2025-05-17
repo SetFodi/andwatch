@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import connectDB from "../../../../lib/db";
 import { User } from "../../../../lib/models/User";
+import { deduplicateWatchlist } from "../../../../lib/utils/deduplicateWatchlist";
 
 // Update user's watchlist
 export async function POST(req: NextRequest) {
@@ -55,18 +56,18 @@ export async function POST(req: NextRequest) {
       if (existingItemIndex !== -1) {
         // Update existing item
         user.watchlist[existingItemIndex].status = status;
-        
+
         // Don't overwrite existing rating if present
         if (progress !== undefined) {
           user.watchlist[existingItemIndex].progress = progress;
         }
-        
+
         if (notes) {
           user.watchlist[existingItemIndex].notes = notes;
         }
-        
+
         user.watchlist[existingItemIndex].updatedAt = new Date();
-        
+
         // If completing an item, set completedAt date
         if (status === 'completed') {
           user.watchlist[existingItemIndex].completedAt = new Date();
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
           userRating: null,
           ...(status === 'completed' ? { completedAt: new Date() } : {})
         };
-        
+
         user.watchlist.push(newItem);
       }
     }
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest) {
       await user.save();
     } catch (saveError) {
       console.error("Error saving user data:", saveError);
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: "Database error: Could not save changes",
         details: saveError.message
       }, { status: 500 });
@@ -104,18 +105,18 @@ export async function POST(req: NextRequest) {
     const updatedItemIndex = user.watchlist.findIndex(
       (item) => item.externalId === externalId && item.mediaType === mediaType
     );
-    
+
     const updatedItem = updatedItemIndex !== -1 ? user.watchlist[updatedItemIndex] : null;
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       item: updatedItem
     });
   } catch (error) {
     console.error("Error updating watchlist:", error);
-    return NextResponse.json({ 
-      error: "Server error", 
-      details: error.message || "Unknown error" 
+    return NextResponse.json({
+      error: "Server error",
+      details: error.message || "Unknown error"
     }, { status: 500 });
   }
 }
@@ -139,8 +140,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Deduplicate the watchlist first to fix the issue with duplicate items
+    const deduplicatedWatchlist = deduplicateWatchlist(user.watchlist || []);
+
     // Filter watchlist based on query parameters
-    let filteredWatchlist = [...user.watchlist];
+    let filteredWatchlist = [...deduplicatedWatchlist];
 
     if (mediaType) {
       filteredWatchlist = filteredWatchlist.filter((item) => item.mediaType === mediaType);

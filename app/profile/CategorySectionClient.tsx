@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import MediaCard from "./MediaCard";
 import EmptyState from "./EmptyState";
+import LazyLoadSection from "@/components/ui/LazyLoadSection";
 
 interface MediaItem {
   id: string | number;
@@ -29,7 +30,7 @@ interface CategorySectionClientProps {
   totalCompleted: number;
 }
 
-export default function CategorySectionClient({ 
+export default function CategorySectionClient({
   watching = [], // Provide default values
   planning = [],
   completed = [],
@@ -40,51 +41,51 @@ export default function CategorySectionClient({
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  
+
   // Use this effect to handle the initial animation and loading state
   useEffect(() => {
-    // Set a short timeout to ensure component is mounted
+    // Set a shorter timeout to improve perceived performance
     const timer = setTimeout(() => {
       setIsInitialLoad(false);
-    }, 800); // Slightly longer to ensure data has time to load
-    
+    }, 300); // Much shorter to improve perceived performance
+
     return () => clearTimeout(timer);
   }, []);
-  
+
   useEffect(() => {
     const handleConnectionError = (event: ErrorEvent) => {
-      if (event.message && 
-         (event.message.includes('Connection closed') || 
+      if (event.message &&
+         (event.message.includes('Connection closed') ||
           event.message.includes('failed to fetch'))) {
         setConnectionError("There was a problem loading your data. Please try refreshing the page.");
       }
     };
-    
+
     window.addEventListener('error', handleConnectionError);
     return () => window.removeEventListener('error', handleConnectionError);
   }, []);
-  
+
   const categories = [
-    { 
-      name: "Watching", 
-      loadedItems: watching, 
+    {
+      name: "Watching",
+      loadedItems: watching,
       totalCount: totalWatching,
-      color: "from-blue-600 to-indigo-600", 
-      icon: PlayIcon 
+      color: "from-blue-600 to-indigo-600",
+      icon: PlayIcon
     },
-    { 
-      name: "Planning", 
-      loadedItems: planning, 
+    {
+      name: "Planning",
+      loadedItems: planning,
       totalCount: totalPlanning,
-      color: "from-purple-600 to-pink-600", 
-      icon: CalendarIcon 
+      color: "from-purple-600 to-pink-600",
+      icon: CalendarIcon
     },
-    { 
-      name: "Completed", 
-      loadedItems: completed, 
+    {
+      name: "Completed",
+      loadedItems: completed,
       totalCount: totalCompleted,
-      color: "from-emerald-600 to-teal-600", 
-      icon: CheckIcon 
+      color: "from-emerald-600 to-teal-600",
+      icon: CheckIcon
     }
   ];
 
@@ -98,7 +99,7 @@ export default function CategorySectionClient({
       }
     }
   };
-  
+
   // Create a shimmer loading placeholder
   const renderLoadingPlaceholder = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -123,8 +124,8 @@ export default function CategorySectionClient({
         </svg>
         <h3 className="text-xl font-medium text-white mb-2">Connection Error</h3>
         <p className="text-gray-300 mb-4">{connectionError}</p>
-        <button 
-          onClick={() => window.location.reload()} 
+        <button
+          onClick={() => window.location.reload()}
           className="px-6 py-2 bg-red-600/30 hover:bg-red-600/50 text-white rounded-lg transition-colors border border-red-500/50"
         >
           Refresh Page
@@ -134,9 +135,9 @@ export default function CategorySectionClient({
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }} 
-      animate={{ opacity: 1, y: 0 }} 
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, ease: "easeOut" }}
       className="space-y-6"
     >
@@ -161,7 +162,7 @@ export default function CategorySectionClient({
             </Tab>
           ))}
         </Tab.List>
-        
+
         <Tab.Panels className="relative">
           <AnimatePresence mode="wait">
             {categories.map((category, idx) => (
@@ -174,27 +175,36 @@ export default function CategorySectionClient({
                   // Show loading placeholder during initial load
                   renderLoadingPlaceholder()
                 ) : category.loadedItems && category.loadedItems.length > 0 ? (
-                  <motion.div
-                    key={`panel-${idx}`}
-                    variants={container}
-                    initial="hidden"
-                    animate="show"
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+                  <LazyLoadSection
+                    delay={100 * idx} // Stagger loading by tab index
+                    placeholder={renderLoadingPlaceholder()}
                   >
-                    {category.loadedItems.map((item, index) => (
-                      item ? <MediaCard key={`${item.id || 'item'}-${index}`} item={item} /> : null
-                    ))}
-                  </motion.div>
+                    <motion.div
+                      key={`panel-${idx}`}
+                      variants={container}
+                      initial="hidden"
+                      animate="show"
+                      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+                    >
+                      {category.loadedItems.map((item, index) => (
+                        item ? <MediaCard key={`${item.id || 'item'}-${index}`} item={item} /> : null
+                      ))}
+                    </motion.div>
+                  </LazyLoadSection>
                 ) : (
                   <EmptyState mediaType="both" />
                 )}
-                
+
                 {!isInitialLoad && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
+                  <LazyLoadSection
+                    delay={200 * idx} // Load after content
+                    threshold={0.05}
                     className="mt-8 text-center"
+                    placeholder={
+                      <div className="mt-8 text-center">
+                        <div className="inline-block h-10 w-40 bg-gray-800/50 rounded-xl animate-pulse"></div>
+                      </div>
+                    }
                   >
                     {category.loadedItems && category.loadedItems.length > 0 ? (
                       <>
@@ -203,9 +213,10 @@ export default function CategorySectionClient({
                             Showing {category.loadedItems.length} of {category.totalCount} items
                           </p>
                         )}
-                        <Link 
-                          href={`/profile/${category.name.toLowerCase()}`} 
+                        <Link
+                          href={`/profile/${category.name.toLowerCase()}`}
                           className={`inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r ${category.color} text-white font-medium text-sm shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300`}
+                          prefetch={true}
                         >
                           <span>View All {category.totalCount} {category.name}</span>
                           <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,9 +225,10 @@ export default function CategorySectionClient({
                         </Link>
                       </>
                     ) : category.totalCount > 0 ? (
-                      <Link 
-                        href={`/profile/${category.name.toLowerCase()}`} 
+                      <Link
+                        href={`/profile/${category.name.toLowerCase()}`}
                         className={`inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r ${category.color} text-white font-medium text-sm shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300`}
+                        prefetch={true}
                       >
                         <span>View All {category.totalCount} {category.name}</span>
                         <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +236,7 @@ export default function CategorySectionClient({
                         </svg>
                       </Link>
                     ) : null}
-                  </motion.div>
+                  </LazyLoadSection>
                 )}
               </Tab.Panel>
             ))}

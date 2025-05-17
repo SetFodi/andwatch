@@ -90,7 +90,7 @@ export default function ProfileHeader({ user, totalWatching, totalPlanning, tota
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                 <p className="text-white">Edit Profile</p> 
+                 <p className="text-white">Edit Profile</p>
                 </span>
               </Link>
             </motion.div>
@@ -149,20 +149,25 @@ interface StatsCardProps {
 }
 
 function StatsCard({ value, label, color, icon }: StatsCardProps) {
+  // Create URL based on label
+  const url = `/profile/${label.toLowerCase()}`;
+
   return (
-    <motion.div
-      whileHover={{ scale: 1.03, y: -5 }}
-      className={`bg-gray-800/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-700/40 shadow-lg transition-all duration-300`}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-          <div className="text-2xl font-bold text-white">{value}</div>
-          <div className="text-gray-400 text-xs font-medium">{label}</div>
+    <Link href={url} prefetch={true}>
+      <motion.div
+        whileHover={{ scale: 1.03, y: -5 }}
+        className={`bg-gray-800/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-700/40 shadow-lg transition-all duration-300 cursor-pointer group`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <div className="text-2xl font-bold text-white">{value}</div>
+            <div className="text-gray-400 text-xs font-medium group-hover:text-white transition-colors">{label}</div>
+          </div>
+          <div className={`p-2 rounded-xl bg-gradient-to-br ${color} text-white shadow-lg group-hover:shadow-xl transition-all duration-300`}>
+            {icon}
+          </div>
         </div>
-        <div className={`p-2 rounded-xl bg-gradient-to-br ${color} text-white shadow-lg`}>
-          {icon}
-        </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </Link>
   );
 }
