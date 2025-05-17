@@ -1,31 +1,53 @@
 // components/layout/client-layout.tsx
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
-import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { ReactNode, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import GlobalLoadingProvider from "@/components/ui/global-loading";
-import { usePathname, useRouter } from "next/navigation";
-import AvatarImage from "@/components/ui/AvatarImage";
+import QuickAccessFAB from "@/components/ui/QuickAccessFAB";
+import BackToTopButton from "@/components/ui/BackToTopButton";
+import EnhancedHeader from "./EnhancedHeader";
+import EnhancedFooter from "./EnhancedFooter";
 
 export default function ClientLayout({ children }: { children: ReactNode }) {
-  const { data: session, status } = useSession();
-  const pathname = usePathname();
   const router = useRouter();
-  const [userData, setUserData] = useState<{
-    avatar?: string;
-    displayName?: string;
-  } | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
 
+  // Enhanced route prefetching for faster navigation
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    // Prefetch main navigation routes
+    const commonRoutes = [
+      '/',
+      '/anime',
+      '/movies',
+      '/tvshows',
+      '/profile',
+      '/profile/history',
+      '/profile/completed',
+      '/profile/watching',
+      '/profile/planning',
+      '/search'
+    ];
+
+    // Immediate prefetch for primary routes
+    commonRoutes.forEach(route => {
+      router.prefetch(route);
+    });
+
+    // Prefetch secondary routes after a short delay
+    const secondaryRoutes = [
+      '/about',
+      '/profile/edit',
+      '/watchlist'
+    ];
+
+    const timer = setTimeout(() => {
+      secondaryRoutes.forEach(route => {
+        router.prefetch(route);
+      });
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [router]);
 
   // Enhanced prefetching for faster navigation
   useEffect(() => {
@@ -492,6 +514,12 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
       <main className="pt-20 flex-1">
         {children}
       </main>
+
+      {/* Quick Access Floating Action Button */}
+      <QuickAccessFAB />
+
+      {/* Back to Top Button */}
+      <BackToTopButton />
 
       {/* Keep the original footer */}
       <footer className="border-t border-gray-900/50 bg-gradient-to-b from-black/60 to-black/90 backdrop-blur-sm py-5 relative overflow-hidden">

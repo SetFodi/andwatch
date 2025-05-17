@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { animeApi, tmdbApi } from "../../lib/services/api";
 import Link from "next/link";
 import Image from "next/image";
+import EnhancedSearchFilter from "@/components/ui/EnhancedSearchFilter";
 
 type SearchResult = {
   id: number | string;
@@ -47,12 +48,15 @@ const debounce = <F extends (...args: any[]) => any>(
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
-  const [mediaType, setMediaType] = useState<"anime" | "movies" | "tv">(
-    "anime",
-  );
+  const [mediaType, setMediaType] = useState<"anime" | "movies" | "tv">("anime");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Advanced filter states
+  const [sortBy, setSortBy] = useState("popularity");
+  const [genreFilter, setGenreFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
 
   // Use a ref to keep track of the latest search request
   const latestSearchRef = useRef<string>("");
@@ -77,18 +81,20 @@ export default function SearchPage() {
     }),
   };
 
-  // Search function remains largely the same
+  // Enhanced search function with filters
   const performSearch = async (
     searchQuery: string,
     type: "anime" | "movies" | "tv",
+    filters = { sort: sortBy, genre: genreFilter, year: yearFilter }
   ) => {
     const searchRequestId = Date.now().toString();
     latestSearchRef.current = searchRequestId;
 
-    if (!searchQuery.trim()) {
+    // Allow empty query for browsing with filters
+    if (!searchQuery.trim() && !filters.genre && !filters.year) {
       setResults([]);
       setError(null);
-      setIsLoading(false); // Ensure loading stops if query is cleared
+      setIsLoading(false);
       return;
     }
 
@@ -99,62 +105,145 @@ export default function SearchPage() {
       let apiResults: SearchResult[] = [];
 
       if (type === "anime") {
-        // Check ref *before* API call
+        // Check ref before API call
         if (latestSearchRef.current !== searchRequestId) return;
-        const animeData = await animeApi.searchAnime(searchQuery, 1);
-        // Check ref *after* API call
+
+        // Use different API methods based on whether we're searching or browsing
+        let animeData;
+        if (searchQuery.trim()) {
+          animeData = await animeApi.searchAnime(searchQuery, 1);
+        } else {
+          // If no query but has filters, use top anime as base
+          animeData = await animeApi.getTopAnime(1);
+        }
+
+        // Check ref after API call
         if (latestSearchRef.current !== searchRequestId) return;
-        apiResults =
-          animeData.data?.map((item: any) => ({
-            id: item.mal_id,
-            title: item.title,
-            type: "anime" as const,
-            image:
-              item.images?.jpg?.large_image_url || item.images?.jpg?.image_url,
-            overview: item.synopsis,
-          })) || [];
+
+        // Map and filter results
+        let mappedResults = animeData.data?.map((item: any) => ({
+          id: item.mal_id,
+          title: item.title,
+          type: "anime" as const,
+          image: item.images?.jpg?.large_image_url || item.images?.jpg?.image_url,
+          overview: item.synopsis,
+          year: item.year || (item.aired?.from ? new Date(item.aired.from).getFullYear() : null),
+          genres: item.genres?.map((g: any) => g.name.toLowerCase()) || []
+        })) || [];
+
+        // Apply filters
+        if (filters.genre) {
+          mappedResults = mappedResults.filter(item =>
+            item.genres.some((g: string) => g.includes(filters.genre.toLowerCase()))
+          );
+        }
+
+        if (filters.year) {
+          mappedResults = mappedResults.filter(item =>
+            item.year === parseInt(filters.year)
+          );
+        }
+
+        // Apply sorting
+        if (filters.sort) {
+          mappedResults = sortResults(mappedResults, filters.sort);
+        }
+
+        apiResults = mappedResults;
       } else if (type === "movies") {
         if (latestSearchRef.current !== searchRequestId) return;
-        const movieData = await tmdbApi.searchMovies(searchQuery, 1);
+
+        // Use different API methods based on whether we're searching or browsing
+        let movieData;
+        if (searchQuery.trim()) {
+          movieData = await tmdbApi.searchMovies(searchQuery, 1);
+        } else {
+          // If no query but has filters, use popular movies as base
+          movieData = await tmdbApi.getPopularMovies(1);
+        }
+
         if (latestSearchRef.current !== searchRequestId) return;
+
         if (movieData.results && Array.isArray(movieData.results)) {
-          apiResults = movieData.results.map((item: any) => ({
+          let mappedResults = movieData.results.map((item: any) => ({
             id: item.id,
             title: item.title,
             type: "movies" as const,
             image: tmdbApi.getImageUrl(item.poster_path),
             overview: item.overview,
+            year: item.release_date ? new Date(item.release_date).getFullYear() : null,
+            genres: item.genre_ids || []
           }));
+
+          // Apply filters
+          if (filters.year) {
+            mappedResults = mappedResults.filter(item =>
+              item.year === parseInt(filters.year)
+            );
+          }
+
+          // Apply sorting
+          if (filters.sort) {
+            mappedResults = sortResults(mappedResults, filters.sort);
+          }
+
+          apiResults = mappedResults;
         }
       } else if (type === "tv") {
         if (latestSearchRef.current !== searchRequestId) return;
-        const tvData = await tmdbApi.searchTVShows(searchQuery, 1);
+
+        // Use different API methods based on whether we're searching or browsing
+        let tvData;
+        if (searchQuery.trim()) {
+          tvData = await tmdbApi.searchTVShows(searchQuery, 1);
+        } else {
+          // If no query but has filters, use popular TV shows as base
+          tvData = await tmdbApi.getPopularTVShows(1);
+        }
+
         if (latestSearchRef.current !== searchRequestId) return;
+
         if (tvData.results && Array.isArray(tvData.results)) {
-          apiResults = tvData.results.map((item: any) => ({
+          let mappedResults = tvData.results.map((item: any) => ({
             id: item.id,
             title: item.name,
             type: "tv" as const,
             image: tmdbApi.getImageUrl(item.poster_path),
             overview: item.overview,
+            year: item.first_air_date ? new Date(item.first_air_date).getFullYear() : null,
+            genres: item.genre_ids || []
           }));
+
+          // Apply filters
+          if (filters.year) {
+            mappedResults = mappedResults.filter(item =>
+              item.year === parseInt(filters.year)
+            );
+          }
+
+          // Apply sorting
+          if (filters.sort) {
+            mappedResults = sortResults(mappedResults, filters.sort);
+          }
+
+          apiResults = mappedResults;
         }
       }
 
       // Final check before setting state
       if (latestSearchRef.current === searchRequestId) {
-        const limitedResults = apiResults.slice(0, 10); // Limit results
+        const limitedResults = apiResults.slice(0, 20); // Show more results
         setResults(limitedResults);
         setError(
-          limitedResults.length === 0 && searchQuery.trim() // Only show 'no results' if query wasn't empty
-            ? "No results found for your query."
-            : null,
+          limitedResults.length === 0 && (searchQuery.trim() || filters.genre || filters.year)
+            ? "No results found for your query and filters."
+            : null
         );
       }
     } catch (err: any) {
       if (latestSearchRef.current === searchRequestId) {
         console.error("Search error:", err);
-        // Check for rate limit error specifically if possible (depends on API client)
+        // Check for rate limit error specifically if possible
         if (err?.response?.status === 429) {
           setError("Rate limited by the API. Please wait a moment and try again.");
         } else {
@@ -170,6 +259,25 @@ export default function SearchPage() {
     }
   };
 
+  // Helper function to sort results
+  const sortResults = (results: any[], sortType: string) => {
+    switch (sortType) {
+      case 'popularity':
+        // Already sorted by popularity in most APIs
+        return results;
+      case 'rating':
+        return [...results].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
+      case 'newest':
+        return [...results].sort((a, b) => (b.year || 0) - (a.year || 0));
+      case 'oldest':
+        return [...results].sort((a, b) => (a.year || 0) - (b.year || 0));
+      case 'alphabetical':
+        return [...results].sort((a, b) => a.title.localeCompare(b.title));
+      default:
+        return results;
+    }
+  };
+
   // Create a stable, debounced search function using useCallback
   const debouncedSearch = useCallback(
     debounce((searchQuery: string, type: "anime" | "movies" | "tv") => {
@@ -177,6 +285,11 @@ export default function SearchPage() {
     }, 750), // 750ms delay
     [], // No dependencies needed for useCallback here, performSearch is stable
   );
+
+  // Function to handle search button click or Enter key
+  const handleSearch = useCallback(() => {
+    performSearch(query, mediaType, { sort: sortBy, genre: genreFilter, year: yearFilter });
+  }, [query, mediaType, sortBy, genreFilter, yearFilter, performSearch]);
 
   // Effect to trigger search when query or mediaType changes
   useEffect(() => {
@@ -207,58 +320,79 @@ export default function SearchPage() {
       >
         {/* Reverted to original structure slightly */}
         <div className="relative bg-gray-900/70 border border-gray-800/50 rounded-2xl p-6 backdrop-blur-md shadow-2xl">
-          <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-            {/* Filter Dropdown */}
-            <select
-              value={mediaType}
-              onChange={(e) =>
-                setMediaType(e.target.value as "anime" | "movies" | "tv")
-              }
-              className="w-full sm:w-auto bg-gray-800/50 border border-gray-700/50 rounded-lg px-4 py-2 text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-            >
-              <option value="anime">Anime</option>
-              <option value="movies">Movies</option>
-              <option value="tv">TV Shows</option>
-            </select>
-
-            {/* Search Input */}
-            <div className="relative w-full flex-grow">
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={`Search for ${
-                  mediaType === "tv" ? "TV Shows" : mediaType
-                }...`} // Dynamic placeholder
-                // Reverted input styling closer to original
-                className="w-full bg-transparent text-white text-xl placeholder-gray-500 border-b-2 border-gray-700 focus:border-indigo-500 focus:outline-none py-2 px-1 transition-colors duration-300"
-              />
-              {isLoading && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <svg
-                    className="animate-spin h-5 w-5 text-indigo-500"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                </div>
-              )}
-            </div>
+          {/* Search Input */}
+          <div className="relative w-full mb-6">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Search for ${
+                mediaType === "tv" ? "TV Shows" : mediaType
+              } or browse by filters...`}
+              className="w-full bg-transparent text-white text-xl placeholder-gray-500 border-b-2 border-gray-700 focus:border-indigo-500 focus:outline-none py-2 px-1 transition-colors duration-300"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSearch();
+                }
+              }}
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                className="absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+            {isLoading ? (
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2">
+                <svg
+                  className="animate-spin h-5 w-5 text-indigo-500"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              </div>
+            ) : (
+              <button
+                onClick={handleSearch}
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 text-indigo-500 hover:text-indigo-400 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            )}
           </div>
+
+          {/* Enhanced Search Filter */}
+          <EnhancedSearchFilter
+            mediaType={mediaType}
+            setMediaType={setMediaType}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            genreFilter={genreFilter}
+            setGenreFilter={setGenreFilter}
+            yearFilter={yearFilter}
+            setYearFilter={setYearFilter}
+            onSearch={handleSearch}
+          />
         </div>
       </motion.div>
 
@@ -295,10 +429,9 @@ export default function SearchPage() {
                         fill
                         sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        onError={(e) => {
-                          // Optional: Handle image loading errors, e.g., show placeholder
+                        onError={() => {
+                          // Handle image loading errors
                           console.error("Image load error:", result.image);
-                          // e.currentTarget.src = '/placeholder.png'; // Example
                         }}
                       />
                     ) : (

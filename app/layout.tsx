@@ -4,7 +4,7 @@ import "./globals.css";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./api/auth/[...nextauth]/route";
 import Providers from "./providers";
-import ClientLayout from "@/components/layout/client-layout";
+import ClientLayout from "@/components/layout/client-layout-new";
 
 export const metadata = {
   title: "AndWatch | Track Movies & Anime",
