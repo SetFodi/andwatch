@@ -3,14 +3,15 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useSession } from "next-auth/react";
 import GlobalLoadingProvider from "@/components/ui/global-loading";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import AvatarImage from "@/components/ui/AvatarImage";
 
 export default function ClientLayout({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
+  const router = useRouter();
   const [userData, setUserData] = useState<{
     avatar?: string;
     displayName?: string;
@@ -26,6 +27,15 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Prefetch common routes for faster navigation
+  useEffect(() => {
+    // Prefetch main navigation routes
+    const commonRoutes = ['/anime', '/movies', '/tvshows', '/profile', '/search'];
+    commonRoutes.forEach(route => {
+      router.prefetch(route);
+    });
+  }, [router]);
+
   // Fetch user data including avatar when session is available
   useEffect(() => {
     const fetchUserData = async () => {
@@ -35,7 +45,7 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             setUserData(data);
@@ -51,14 +61,81 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
     }
   }, [session, status]);
 
-  // Generate the avatar URL if it exists, adding cache busting
-  const avatarUrl = userData?.avatar 
-    ? `${process.env.NEXT_PUBLIC_BASE_URL || ''}${userData.avatar}?t=${Date.now()}` 
-    : null;
-  
+  // Generate the avatar URL if it exists, with proper path handling
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Update avatar URL when user data changes
+  useEffect(() => {
+    if (userData?.avatar && userData.avatar.trim() !== '') {
+      try {
+        // Add a timestamp to prevent caching issues
+        const avatarPath = userData.avatar.startsWith('/') ? userData.avatar : `/${userData.avatar}`;
+
+        // For local development, use relative URLs
+        // This avoids issues with http vs https and localhost vs domain names
+        const fullUrl = `${avatarPath}?t=${Date.now()}`;
+
+        // Set the URL immediately
+        setAvatarUrl(fullUrl);
+      } catch (error) {
+        console.warn("Error processing avatar URL:", error);
+        setAvatarUrl(null);
+      }
+    } else {
+      setAvatarUrl(null);
+    }
+  }, [userData]);
+
+  // Check for avatar updates from other components
+  useEffect(() => {
+    // Function to check for avatar updates
+    const checkForAvatarUpdates = async () => {
+      const avatarUpdated = localStorage.getItem('avatarUpdated');
+      if (avatarUpdated && session?.user?.id) {
+        // Clear the flag
+        localStorage.removeItem('avatarUpdated');
+
+        // Refetch user data to get the updated avatar
+        try {
+          const response = await fetch(`/api/user/${session.user.id}`);
+          if (response.ok) {
+            const data = await response.json();
+            setUserData(data);
+
+            // Force avatar refresh with new timestamp
+            if (data.avatar && data.avatar.trim() !== '') {
+              try {
+                const avatarPath = data.avatar.startsWith('/') ? data.avatar : `/${data.avatar}`;
+                // Use relative URL to avoid protocol/domain issues
+                const fullUrl = `${avatarPath}?t=${Date.now()}`;
+
+                // Set the URL immediately
+                setAvatarUrl(fullUrl);
+              } catch (error) {
+                console.warn("Error processing avatar URL during refresh:", error);
+                setAvatarUrl(null);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Failed to refresh avatar:", error);
+        }
+      }
+    };
+
+    // Check immediately
+    checkForAvatarUpdates();
+
+    // Also set up an interval to check periodically
+    const intervalId = setInterval(checkForAvatarUpdates, 5000);
+
+    // Clean up
+    return () => clearInterval(intervalId);
+  }, [session]);
+
   // Display name fallback chain
   const displayName = userData?.displayName || session?.user?.name || session?.user?.email?.split('@')[0] || "User";
-  
+
   // First letter for avatar fallback
   const firstLetter = displayName.charAt(0).toUpperCase();
 
@@ -71,10 +148,10 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
   return (
     <GlobalLoadingProvider>
       {/* Enhanced header with dynamic scroll behavior */}
-      <header 
+      <header
         className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-          scrolled 
-            ? "bg-black/80 backdrop-blur-lg h-16 shadow-xl shadow-black/30" 
+          scrolled
+            ? "bg-black/80 backdrop-blur-lg h-16 shadow-xl shadow-black/30"
             : "bg-gradient-to-b from-black/80 to-transparent backdrop-blur-md h-20"
         }`}
       >
@@ -103,38 +180,38 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
             {/* Main Navigation with animated indicators */}
             <nav className="hidden lg:flex ml-12">
               <div className="flex items-center space-x-1">
-                <NavLink 
-                  href="/" 
-                  isActive={pathname === '/'} 
-                  label="Home" 
-                  icon={<HomeIcon />} 
+                <NavLink
+                  href="/"
+                  isActive={pathname === '/'}
+                  label="Home"
+                  icon={<HomeIcon />}
                 />
-                <NavLink 
-                  href="/anime" 
-                  isActive={isActive('/anime')} 
-                  label="Anime" 
-                  icon={<AnimeIcon />} 
+                <NavLink
+                  href="/anime"
+                  isActive={isActive('/anime')}
+                  label="Anime"
+                  icon={<AnimeIcon />}
                   color="from-pink-600 to-rose-500"
                 />
-                <NavLink 
-                  href="/movies" 
-                  isActive={isActive('/movies')} 
-                  label="Movies" 
-                  icon={<MovieIcon />} 
+                <NavLink
+                  href="/movies"
+                  isActive={isActive('/movies')}
+                  label="Movies"
+                  icon={<MovieIcon />}
                   color="from-amber-600 to-orange-500"
                 />
-                <NavLink 
-                  href="/tvshows" 
-                  isActive={isActive('/tvshows')} 
-                  label="TV Shows" 
-                  icon={<TVIcon />} 
+                <NavLink
+                  href="/tvshows"
+                  isActive={isActive('/tvshows')}
+                  label="TV Shows"
+                  icon={<TVIcon />}
                   color="from-sky-600 to-blue-500"
                 />
-                <NavLink 
-                  href="/about" 
-                  isActive={isActive('/about')} 
-                  label="About" 
-                  icon={<AboutIcon />} 
+                <NavLink
+                  href="/about"
+                  isActive={isActive('/about')}
+                  label="About"
+                  icon={<AboutIcon />}
                 />
               </div>
             </nav>
@@ -156,32 +233,21 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
             {/* User Section with enhanced dropdown */}
             {status === "authenticated" ? (
               <div className="relative group z-30">
-                <button 
-                  className="flex items-center focus:outline-none" 
+                <button
+                  className="flex items-center focus:outline-none"
                   aria-label="Open user menu"
                   aria-expanded={mobileMenuOpen}
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 >
                   <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-600 border border-indigo-700/50 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/30 transition-all duration-500 transform group-hover:scale-105 relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/80 to-violet-600/80 group-hover:from-indigo-500/80 group-hover:to-violet-500/80 transition-all duration-300"></div>
-                    {avatarUrl ? (
-                      <Image 
-                        src={avatarUrl} 
-                        alt={displayName} 
-                        width={40} 
-                        height={40} 
-                        className="object-cover w-full h-full z-10"
-                        onError={(e) => {
-                          // On error, revert to initials
-                          console.error("Error loading avatar", e);
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
+                    <div className="absolute inset-0 z-10 overflow-hidden rounded-full">
+                      <AvatarImage
+                        src={avatarUrl}
+                        alt={displayName}
+                        fallbackText={firstLetter}
+                        size={40}
                       />
-                    ) : (
-                      <span className="text-sm font-medium text-white relative z-10">
-                        {firstLetter}
-                      </span>
-                    )}
+                    </div>
                     <div className="absolute inset-0 rounded-full ring-0 ring-indigo-500/0 group-hover:ring-2 group-hover:ring-indigo-500/50 transition-all duration-300"></div>
                   </div>
                 </button>
@@ -199,20 +265,15 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                         <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl"></div>
                         <div className="py-4 px-5 relative">
                           <div className="flex items-center space-x-4">
-                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-700/50 flex items-center justify-center shadow-inner shadow-black/10">
-                              {avatarUrl ? (
-                                <Image 
-                                  src={avatarUrl} 
-                                  alt={displayName} 
-                                  width={48} 
-                                  height={48} 
-                                  className="object-cover w-full h-full"
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-700/50 flex items-center justify-center shadow-inner shadow-black/10 relative">
+                              <div className="absolute inset-0 overflow-hidden">
+                                <AvatarImage
+                                  src={avatarUrl}
+                                  alt={displayName}
+                                  fallbackText={firstLetter}
+                                  size={48}
                                 />
-                              ) : (
-                                <span className="text-base font-medium text-white">
-                                  {firstLetter}
-                                </span>
-                              )}
+                              </div>
                             </div>
                             <div className="flex flex-col">
                               <span className="text-sm font-medium text-white">{displayName}</span>
@@ -220,19 +281,19 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                             </div>
                           </div>
                         </div>
-                              
+
                         {/* Decorative divider */}
                         <div className="h-px bg-gradient-to-r from-transparent via-gray-700/50 to-transparent"></div>
                       </div>
-                      
+
                       {/* Menu items */}
                       <div className="py-2">
                         <MenuLink href="/profile" label="Profile" icon={<ProfileIcon />} />
                         <MenuLink href="/profile/history" label="Watch History" icon={<HistoryIcon />} />
-                        
+
                         {/* Divider */}
                         <div className="my-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-700/50 to-transparent"></div>
-                        
+
                         {/* Sign out button with hover effects */}
                         <div className="px-3 pt-1 pb-2">
                           <form action="/api/auth/signout" method="post" className="w-full">
@@ -273,7 +334,7 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
             )}
 
             {/* Mobile menu button with animated hamburger */}
-            <button 
+            <button
               className="lg:hidden relative z-40 p-1.5 rounded-md focus:outline-none"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
@@ -288,14 +349,14 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
           </div>
 
           {/* Mobile Navigation Overlay with blur effects */}
-          <div 
+          <div
             className={`lg:hidden fixed inset-0 bg-black/95 backdrop-blur-xl z-30 transition-all duration-500 ${
               mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
             }`}
           >
             <div className="flex flex-col h-full pt-20 px-6 pb-16 overflow-y-auto">
               <nav className="flex-1 flex flex-col justify-center space-y-2">
-                <MobileNavLink 
+                <MobileNavLink
                   href="/"
                   label="Home"
                   icon={<HomeIcon />}
@@ -340,10 +401,10 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                   isActive={isActive('/about')}
                   onClick={() => setMobileMenuOpen(false)}
                 />
-                
+
                 {/* Decorative divider */}
                 <div className="w-16 h-px bg-gradient-to-r from-transparent via-indigo-500 to-transparent mx-auto my-4"></div>
-                
+
                 {status === "authenticated" ? (
                   <>
                     <MobileNavLink
@@ -356,14 +417,14 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                     <MobileNavLink
                       href="/watchlist"
                       label="My Watchlist"
-                      icon={<WatchlistIcon />} 
+                      icon={<WatchlistIcon />}
                       isActive={isActive('/watchlist')}
                       onClick={() => setMobileMenuOpen(false)}
                     />
                     <div className="pt-4">
                       <form action="/api/auth/signout" method="post" className="w-full">
-                        <button 
-                          type="submit" 
+                        <button
+                          type="submit"
                           className="w-full py-3 px-4 rounded-lg flex items-center justify-center space-x-2 bg-rose-900/20 text-rose-400"
                           onClick={() => setMobileMenuOpen(false)}
                         >
@@ -412,7 +473,7 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
           <div className="absolute -bottom-32 -left-32 w-64 h-64 rounded-full bg-purple-500/30 blur-3xl animate-blob-slow animation-delay-2000"></div>
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-indigo-800/10 blur-3xl animate-pulse-slow"></div>
         </div>
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Logo section with animation */}
@@ -430,7 +491,7 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                 </span>
               </Link>
               <p className="text-gray-500 text-xs leading-relaxed hover:text-gray-400 transition-colors duration-300">Track your anime and movies beautifully. Create personal collections and discover new content.</p>
-              
+
               {/* Social links with enhanced hover effects */}
               <div className="flex space-x-3 mt-3">
                 <a href="https://www.instagram.com/fartenadzeluka/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-indigo-400 transition-all duration-300 transform hover:scale-110">
@@ -450,7 +511,7 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                 </a>
               </div>
             </div>
-            
+
             {/* Quick Links with hover effect */}
             <div>
               <h3 className="text-white text-sm font-medium mb-3 relative inline-block">
@@ -458,13 +519,13 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-full transition-all duration-300"></span>
               </h3>
               <ul className="space-y-1.5 text-xs">
-                <li><Link href="/" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Home</Link></li>
-                <li><Link href="/anime" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Anime</Link></li>
-                <li><Link href="/movies" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Movies</Link></li>
-                <li><Link href="/about" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">About</Link></li>
+                <li><Link href="/" prefetch={true} className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Home</Link></li>
+                <li><Link href="/anime" prefetch={true} className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Anime</Link></li>
+                <li><Link href="/movies" prefetch={true} className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Movies</Link></li>
+                <li><Link href="/about" prefetch={true} className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">About</Link></li>
               </ul>
             </div>
-            
+
             {/* Account Links with hover effect */}
             <div>
               <h3 className="text-white text-sm font-medium mb-3 relative inline-block">
@@ -472,19 +533,19 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-full transition-all duration-300"></span>
               </h3>
               <ul className="space-y-1.5 text-xs">
-                <li><Link href="/profile" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Profile</Link></li>
-                <li><Link href="/auth/signin" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Sign In</Link></li>
-                <li><Link href="/auth/signup" className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Sign Up</Link></li>
+                <li><Link href="/profile" prefetch={true} className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Profile</Link></li>
+                <li><Link href="/auth/signin" prefetch={true} className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Sign In</Link></li>
+                <li><Link href="/auth/signup" prefetch={true} className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 inline-block">Sign Up</Link></li>
               </ul>
             </div>
           </div>
-          
+
           {/* Bottom copyright with subtle animation */}
           <div className="mt-6 pt-4 border-t border-gray-900/70 flex flex-col sm:flex-row justify-between items-center gap-2">
             <p className="text-gray-500 text-xs">© {new Date().getFullYear()} AndWatch. All rights reserved.</p>
             <p className="text-gray-600 text-xs group">
-              <span className="inline-block group-hover:animate-pulse-slow">Made with</span> 
-              <span className="inline-block text-red-500 mx-1 transform group-hover:scale-125 transition-transform duration-300">♥</span> 
+              <span className="inline-block group-hover:animate-pulse-slow">Made with</span>
+              <span className="inline-block text-red-500 mx-1 transform group-hover:scale-125 transition-transform duration-300">♥</span>
               <span className="inline-block group-hover:animate-pulse-slow">for anime & movie enthusiasts</span>
             </p>
           </div>
@@ -494,20 +555,21 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
   );
 }
 
-// Enhanced Desktop Navigation Link Component with animations
-function NavLink({ href, icon, label, isActive, color = "from-indigo-600 to-violet-500" }: { 
-  href: string; 
-  icon: React.ReactNode; 
+// Enhanced Desktop Navigation Link Component with animations and prefetching
+function NavLink({ href, icon, label, isActive, color = "from-indigo-600 to-violet-500" }: {
+  href: string;
+  icon: React.ReactNode;
   label: string;
   isActive: boolean;
   color?: string;
 }) {
   return (
-    <Link 
+    <Link
       href={href}
+      prefetch={true} // Enable prefetching for faster navigation
       className={`relative px-4 py-2 rounded-full text-sm transition-all duration-300 mx-1 group overflow-hidden flex items-center ${
-        isActive 
-          ? `text-white bg-gradient-to-r ${color}` 
+        isActive
+          ? `text-white bg-gradient-to-r ${color}`
           : 'text-gray-400 hover:text-white'
       }`}
     >
@@ -517,16 +579,16 @@ function NavLink({ href, icon, label, isActive, color = "from-indigo-600 to-viol
       )}
       <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-1/2 transition-all duration-500"></span>
       <span className="absolute bottom-0 right-1/2 transform translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 group-hover:w-1/2 transition-all duration-500"></span>
-      
+
       {/* Icon with subtle animation */}
       <span className={`mr-2 transition-transform duration-300 ${isActive ? '' : 'group-hover:scale-110'}`}>
         {icon}
       </span>
-      
+
       <span className={`transition-all duration-300 ${isActive ? 'font-medium' : 'group-hover:font-medium'}`}>
         {label}
       </span>
-      
+
       {/* Animated glow effect on hover */}
       {isActive && (
         <span className="absolute inset-0 -z-10 opacity-25 bg-gradient-to-r from-white/5 to-white/10 rounded-full blur-sm"></span>
@@ -535,27 +597,28 @@ function NavLink({ href, icon, label, isActive, color = "from-indigo-600 to-viol
   );
 }
 
-// Enhanced Mobile Navigation Link
-function MobileNavLink({ 
-  href, 
-  icon, 
-  label, 
+// Enhanced Mobile Navigation Link with prefetching
+function MobileNavLink({
+  href,
+  icon,
+  label,
   isActive,
   color,
   onClick
-}: { 
-  href: string; 
-  icon: React.ReactNode; 
+}: {
+  href: string;
+  icon: React.ReactNode;
   label: string;
   isActive: boolean;
   color?: string;
   onClick: () => void;
 }) {
   return (
-    <Link 
-      href={href} 
+    <Link
+      href={href}
+      prefetch={true} // Enable prefetching for faster navigation
       className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base relative overflow-hidden transition-all duration-300 ${
-        isActive 
+        isActive
           ? `${color || 'bg-gradient-to-r from-indigo-600 to-violet-500'} text-white`
           : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
       }`}
@@ -565,7 +628,7 @@ function MobileNavLink({
         {icon}
       </span>
       <span className={`${isActive ? 'font-medium' : ''}`}>{label}</span>
-      
+
       {/* Right arrow for active item */}
       {isActive && (
         <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -576,11 +639,12 @@ function MobileNavLink({
   );
 }
 
-// Enhanced Menu Link
+// Enhanced Menu Link with prefetching
 function MenuLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
   return (
-    <Link 
-      href={href} 
+    <Link
+      href={href}
+      prefetch={true} // Enable prefetching for faster navigation
       className="flex items-center px-4 py-2.5 mx-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800/70 rounded-lg transition-all duration-300 group relative overflow-hidden"
     >
       <span className="absolute inset-0 bg-gradient-to-r from-indigo-600/0 to-indigo-600/0 group-hover:from-indigo-600/10 group-hover:to-indigo-600/20 transition-all duration-500"></span>

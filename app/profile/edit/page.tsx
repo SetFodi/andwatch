@@ -3,13 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 export default function EditProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [userData, setUserData] = useState({
     displayName: "",
     avatar: "",
@@ -39,18 +38,19 @@ export default function EditProfilePage() {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
-      
+
       if (!response.ok) throw new Error("Failed to fetch user data");
-      
+
       const data = await response.json();
       setUserData({
         displayName: data.displayName || "",
         avatar: data.avatar || "",
         bio: data.bio || "",
       });
-      
+
       if (data.avatar) {
-        setPreviewAvatar(`${process.env.NEXT_PUBLIC_BASE_URL}${data.avatar}`);
+        // Add timestamp to prevent caching issues
+        setPreviewAvatar(`${process.env.NEXT_PUBLIC_BASE_URL || ''}${data.avatar}?t=${Date.now()}`);
       }
     } catch (err: any) {
       setError(err.message);
@@ -63,14 +63,14 @@ export default function EditProfilePage() {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      
+
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewAvatar(reader.result as string);
       };
       reader.readAsDataURL(file);
-      
+
       console.log("Selected file:", file.name, file.size, file.type);
     } else {
       console.log("No file selected");
@@ -90,7 +90,7 @@ export default function EditProfilePage() {
     const formData = new FormData();
     formData.append("displayName", userData.displayName);
     formData.append("bio", userData.bio);
-    
+
     // Only append the file if one was selected
     if (selectedFile) {
       formData.append("avatar", selectedFile);
@@ -100,28 +100,40 @@ export default function EditProfilePage() {
     try {
       // Log formData to confirm contents (for debugging)
       console.log("FormData entries:", [...formData.entries()].map(([key]) => key));
-      
+
       const response = await fetch(`/api/user/${session.user.id}`, {
         method: "PUT",
         body: formData,
         // Don't set Content-Type header, the browser will set it with the boundary
       });
-      
+
       const responseData = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(responseData.error || "Failed to update profile");
       }
-      
+
       setSuccess(responseData.message || "Profile updated successfully!");
-      
+
       // If we got a new avatar path, update it
       if (responseData.avatar) {
-        setUserData(prev => ({ ...prev, avatar: responseData.avatar }));
+        // Update the avatar with a timestamp to force refresh
+        const newAvatarPath = responseData.avatar;
+        setUserData(prev => ({ ...prev, avatar: newAvatarPath }));
+
+        // Force a refresh of the avatar preview with timestamp
+        setPreviewAvatar(`${process.env.NEXT_PUBLIC_BASE_URL || ''}${newAvatarPath}?t=${Date.now()}`);
+
+        // Store a refresh flag in localStorage to tell other components to refresh the avatar
+        localStorage.setItem('avatarUpdated', Date.now().toString());
       }
-      
+
       // Navigate back to profile after a short delay
-      setTimeout(() => router.push("/profile"), 2000);
+      setTimeout(() => {
+        // Force a full page refresh to ensure all components update with the new avatar
+        // Add a cache-busting parameter to ensure the browser doesn't use cached resources
+        window.location.href = `/profile?refresh=${Date.now()}`;
+      }, 2000);
     } catch (err: any) {
       setError(err.message);
     }
@@ -169,14 +181,11 @@ export default function EditProfilePage() {
               className="mt-1 block w-full bg-gray-800/50 border border-gray-700/50 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             {previewAvatar && (
-              <div className="mt-2 relative w-24 h-24">
-                <Image
-                  src={previewAvatar}
-                  alt="Avatar Preview"
-                  fill
-                  className="object-cover rounded-full"
-                  onError={(e) => console.error("Image load error:", e)}
-                />
+              <div className="mt-2 relative w-24 h-24 rounded-full overflow-hidden border-2 border-indigo-500">
+                <div
+                  className="w-full h-full bg-cover bg-center rounded-full"
+                  style={{ backgroundImage: `url(${previewAvatar})` }}
+                ></div>
               </div>
             )}
           </div>

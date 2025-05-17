@@ -6,6 +6,13 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true
   },
+  // Performance optimizations
+  reactStrictMode: true,
+  swcMinify: true, // Use SWC for minification (faster than Terser)
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production', // Remove console.log in production
+  },
+  // Simplified image configuration
   images: {
     remotePatterns: [
       {
@@ -31,6 +38,7 @@ const nextConfig = {
         pathname: "/uploads/**",
       }
     ],
+    unoptimized: true, // Disable image optimization to fix errors
   },
 };
 
