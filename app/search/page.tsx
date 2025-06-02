@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"; // Import useCallback
 import { motion } from "framer-motion";
-import { animeApi, tmdbApi } from "../../lib/services/api";
+import { animeApi } from "../../lib/services/api";
 import Link from "next/link";
 import Image from "next/image";
 import EnhancedSearchFilter from "@/components/ui/EnhancedSearchFilter";
@@ -156,10 +156,12 @@ export default function SearchPage() {
         // Use different API methods based on whether we're searching or browsing
         let movieData;
         if (searchQuery.trim()) {
-          movieData = await tmdbApi.searchMovies(searchQuery, 1);
+          const response = await fetch(`/api/search/movies?q=${encodeURIComponent(searchQuery)}&page=1`);
+          movieData = await response.json();
         } else {
           // If no query but has filters, use popular movies as base
-          movieData = await tmdbApi.getPopularMovies(1);
+          const response = await fetch(`/api/search/popular?type=movies&page=1`);
+          movieData = await response.json();
         }
 
         if (latestSearchRef.current !== searchRequestId) return;
@@ -169,7 +171,7 @@ export default function SearchPage() {
             id: item.id,
             title: item.title,
             type: "movies" as const,
-            image: tmdbApi.getImageUrl(item.poster_path),
+            image: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
             overview: item.overview,
             year: item.release_date ? new Date(item.release_date).getFullYear() : null,
             genres: item.genre_ids || []
@@ -195,10 +197,12 @@ export default function SearchPage() {
         // Use different API methods based on whether we're searching or browsing
         let tvData;
         if (searchQuery.trim()) {
-          tvData = await tmdbApi.searchTVShows(searchQuery, 1);
+          const response = await fetch(`/api/search/tv?q=${encodeURIComponent(searchQuery)}&page=1`);
+          tvData = await response.json();
         } else {
           // If no query but has filters, use popular TV shows as base
-          tvData = await tmdbApi.getPopularTVShows(1);
+          const response = await fetch(`/api/search/popular?type=tv&page=1`);
+          tvData = await response.json();
         }
 
         if (latestSearchRef.current !== searchRequestId) return;
@@ -208,7 +212,7 @@ export default function SearchPage() {
             id: item.id,
             title: item.name,
             type: "tv" as const,
-            image: tmdbApi.getImageUrl(item.poster_path),
+            image: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
             overview: item.overview,
             year: item.first_air_date ? new Date(item.first_air_date).getFullYear() : null,
             genres: item.genre_ids || []

@@ -5,7 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import connectDB, { checkDbConnection } from "../../../../lib/db";
 import { User } from "../../../../lib/models/User";
 import { animeApi, tmdbApi } from "../../../../lib/services/api";
-import ProfileCategoryClient from "../../../../components/ProfileCategoryClient";
+import ServerFilteredProfileClient from "../../../../components/ServerFilteredProfileClient";
 import { processBatch, getOrSetCache } from "../../../../lib/utils/mediaCache";
 import ConnectionErrorBoundary from "../../../../components/ConnectionErrorBoundary";
 
@@ -142,48 +142,89 @@ function createPlaceholder(item: any) {
   };
 }
 
-// Process items with pagination in mind
-async function processCompletedItems(watchlist: any[], page = 1) {
+// Process items with pagination and filtering in mind
+async function processCompletedItems(watchlist: any[], page = 1, filterType = 'all', searchQuery = '') {
   // Filter for completed status
-  const completedItems = watchlist.filter(item => item.status === "completed");
-  
+  let completedItems = watchlist.filter(item => item.status === "completed");
+
+  // Apply type filter with proper type mapping
+  if (filterType && filterType !== 'all') {
+    // Map client filter types to database types
+    const typeMapping: { [key: string]: string } = {
+      'movie': 'movie',
+      'movies': 'movie',
+      'tv': 'tv',
+      'anime': 'anime'
+    };
+
+    const dbFilterType = typeMapping[filterType] || filterType;
+    completedItems = completedItems.filter(item => {
+      // Filter by mediaType since type is undefined in the database
+      return item.mediaType === dbFilterType ||
+             item.mediaType === filterType ||
+             (filterType === 'movie' && item.mediaType === 'movie') ||
+             (filterType === 'anime' && item.mediaType === 'anime') ||
+             (filterType === 'tv' && item.mediaType === 'tv');
+    });
+
+
+  }
+
+  // Apply search filter
+  if (searchQuery && searchQuery.trim()) {
+    const query = searchQuery.toLowerCase();
+    completedItems = completedItems.filter(item =>
+      item.title?.toLowerCase().includes(query) ||
+      item.originalTitle?.toLowerCase().includes(query)
+    );
+  }
+
   // Sort by completed date if available (most recent first)
   completedItems.sort((a, b) => {
     const dateA = a.completedAt || a.updatedAt || a.addedAt || new Date(0);
     const dateB = b.completedAt || b.updatedAt || b.addedAt || new Date(0);
     return new Date(dateB).getTime() - new Date(dateA).getTime();
   });
-  
+
   // Calculate pagination
   const startIndex = (page - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const paginatedItems = completedItems.slice(startIndex, endIndex);
-  
+
   // Process all items in this page
   const processedItems = await processBatch(paginatedItems, fetchItemDetails, 5);
-  
+
   return {
     items: processedItems,
     totalItems: completedItems.length,
     totalPages: Math.ceil(completedItems.length / ITEMS_PER_PAGE),
-    currentPage: page
+    currentPage: page,
+    filterType,
+    searchQuery
   };
 }
 
-export default async function CompletedAllPage({ 
-  searchParams = {} 
-}: { 
-  searchParams?: { page?: string } 
+export default async function CompletedAllPage({
+  searchParams
+}: {
+  searchParams: Promise<{ page?: string; type?: string; search?: string }>
 }) {
   const session = await getServerSession(authOptions);
-  
+
   if (!session || !session.user) {
     redirect("/auth/signin?callbackUrl=/profile/completed/all");
   }
-  
+
+  // Await searchParams to fix Next.js 15 warning
+  const params = await searchParams;
+
   // Fix page param handling with proper defaults and type checking
-  const pageParam = searchParams?.page || '1';
+  const pageParam = params?.page || '1';
   const page = !isNaN(parseInt(pageParam)) ? parseInt(pageParam) : 1;
+
+  // Get filter parameters
+  const filterType = params?.type || 'all';
+  const searchQuery = params?.search || '';
   
   let userData;
   let completedData = { items: [], totalItems: 0, totalPages: 1, currentPage: page };
@@ -197,8 +238,8 @@ export default async function CompletedAllPage({
       notFound();
     }
     
-    // Process items with pagination
-    completedData = await processCompletedItems(userData.watchlist || [], page);
+    // Process items with pagination and filtering
+    completedData = await processCompletedItems(userData.watchlist || [], page, filterType, searchQuery);
     
   } catch (err) {
     console.error("Error in CompletedAllPage:", err);
@@ -221,17 +262,17 @@ export default async function CompletedAllPage({
               </button>
             </div>
           ) : (
-            <ProfileCategoryClient 
-              items={completedData.items || []} 
-              categoryName="Completed" 
+            <ServerFilteredProfileClient
+              items={completedData.items || []}
+              categoryName="Completed"
               colorTheme="from-emerald-600 to-teal-600"
               categoryIcon="check"
               userId={session.user.id}
               totalCount={completedData.totalItems}
-              isFullLoad={true}
               currentPage={completedData.currentPage}
               totalPages={completedData.totalPages}
-              isPaginated={true}
+              filterType={filterType}
+              searchQuery={searchQuery}
             />
           )}
         </div>

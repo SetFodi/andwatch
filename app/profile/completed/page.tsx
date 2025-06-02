@@ -5,7 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import connectDB, { checkDbConnection } from "../../../lib/db";
 import { User } from "../../../lib/models/User";
 import { animeApi, tmdbApi } from "../../../lib/services/api";
-import ProfileCategoryClient from "../../../components/ProfileCategoryClient";
+import ServerFilteredProfileClient from "../../../components/ServerFilteredProfileClient";
 import { processBatch, getOrSetCache } from "../../../lib/utils/mediaCache";
 import ConnectionErrorBoundary from "../../../components/ConnectionErrorBoundary";
 
@@ -154,47 +154,70 @@ async function fetchItemDetails(item: any) {
   );
 }
 
-// Process watchlist items with pagination
-async function processWatchlistPaginated(watchlist: any[], page: number = 1, pageSize: number = PAGE_SIZE) {
+// Process watchlist items with pagination and filtering
+async function processWatchlistPaginated(watchlist: any[], page: number = 1, pageSize: number = PAGE_SIZE, filterType: string = 'all', searchQuery: string = '') {
   // Filter for completed status
-  const completedItems = watchlist.filter(item => item.status === "completed");
-  
+  let completedItems = watchlist.filter(item => item.status === "completed");
+
+  // Apply type filter using mediaType since type is undefined in database
+  if (filterType && filterType !== 'all') {
+    completedItems = completedItems.filter(item => item.mediaType === filterType);
+  }
+
+  // Apply search filter
+  if (searchQuery && searchQuery.trim()) {
+    const query = searchQuery.toLowerCase();
+    completedItems = completedItems.filter(item =>
+      item.title?.toLowerCase().includes(query) ||
+      item.originalTitle?.toLowerCase().includes(query)
+    );
+  }
+
   // Calculate pagination parameters
   const totalItems = completedItems.length;
   const startIndex = (page - 1) * pageSize;
   let endIndex = startIndex + pageSize;
-  
+
   // Make sure we don't go beyond the array
   if (endIndex > totalItems) {
     endIndex = totalItems;
   }
-  
+
   // Get the items for the current page
   const paginatedItems = completedItems.slice(startIndex, endIndex);
-  
+
   // Process in batches for better performance
   return {
     items: await processBatch(paginatedItems, fetchItemDetails, BATCH_SIZE),
     totalItems,
     currentPage: page,
-    totalPages: Math.ceil(totalItems / pageSize)
+    totalPages: Math.ceil(totalItems / pageSize),
+    filterType,
+    searchQuery
   };
 }
 
 export default async function CompletedPage({
   searchParams
 }: {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const session = await getServerSession(authOptions);
-  
+
   if (!session || !session.user) {
     redirect("/auth/signin?callbackUrl=/profile/completed");
   }
-  
+
+  // Await searchParams to fix Next.js 15 warning
+  const params = await searchParams;
+
   // Get the page from the search parameters, default to 1
-  const pageParam = searchParams.page;
+  const pageParam = params.page;
   const page = typeof pageParam === 'string' ? parseInt(pageParam, 10) || 1 : 1;
+
+  // Get filter parameters
+  const filterType = typeof params.type === 'string' ? params.type : 'all';
+  const searchQuery = typeof params.search === 'string' ? params.search : '';
   
   let userData;
   let error = null;
@@ -219,8 +242,8 @@ export default async function CompletedPage({
         notFound();
       }
       
-      // Process the watchlist with pagination
-      completedData = await processWatchlistPaginated(userData.watchlist || [], page);
+      // Process the watchlist with pagination and filtering
+      completedData = await processWatchlistPaginated(userData.watchlist || [], page, PAGE_SIZE, filterType, searchQuery);
       
       return { userData, completedData };
     };
@@ -252,18 +275,17 @@ export default async function CompletedPage({
               </button>
             </div>
           ) : (
-            <ProfileCategoryClient 
-              items={completedData.items} 
-              categoryName="Completed" 
+            <ServerFilteredProfileClient
+              items={completedData.items}
+              categoryName="Completed"
               colorTheme="from-emerald-600 to-teal-600"
               categoryIcon="check"
               userId={session.user.id}
               totalCount={completedData.totalItems}
               currentPage={completedData.currentPage}
               totalPages={completedData.totalPages}
-              isPaginated={true}
-              displayLoadMoreLink={true}
-              fullLoadUrl="/profile/completed/all"
+              filterType={filterType}
+              searchQuery={searchQuery}
             />
           )}
         </div>
