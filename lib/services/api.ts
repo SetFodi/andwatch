@@ -89,11 +89,25 @@ export const tmdbApi = {
   },
 
   async getPopularMovies(page = 1) {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&page=${page}`,
-      { next: { revalidate: 86400 } }
-    );
-    return await response.json();
+    try {
+      if (!TMDB_API_KEY) {
+        console.error("TMDB API key is missing");
+        return { results: [], page: 1, total_pages: 1 };
+      }
+
+      const response = await fetch(
+        `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&page=${page}`,
+        { next: { revalidate: 86400 } }
+      );
+      if (!response.ok) {
+        console.error(`TMDB API error: ${response.status} - ${response.statusText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("TMDB getPopularMovies error:", error);
+      return { results: [], page: 1, total_pages: 1 };
+    }
   },
 
   async getTopRatedMovies(page = 1) {
@@ -114,11 +128,19 @@ export const tmdbApi = {
 
   async searchMovies(query: string, page = 1) {
     try {
+      if (!TMDB_API_KEY) {
+        console.error("TMDB API key is missing");
+        return { results: [], page: 1, total_pages: 1 };
+      }
+
       const response = await fetch(
         `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
         { next: { revalidate: 3600 } }
       );
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        console.error(`TMDB API error: ${response.status} - ${response.statusText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       return await response.json();
     } catch (error) {
       console.error("TMDB searchMovies error:", error);
@@ -156,11 +178,25 @@ export const tmdbApi = {
   },
 
   async getPopularTVShows(page = 1) {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/tv/popular?api_key=${TMDB_API_KEY}&page=${page}`,
-      { next: { revalidate: 86400 } }
-    );
-    return await response.json();
+    try {
+      if (!TMDB_API_KEY) {
+        console.error("TMDB API key is missing");
+        return { results: [], page: 1, total_pages: 1 };
+      }
+
+      const response = await fetch(
+        `${TMDB_BASE_URL}/tv/popular?api_key=${TMDB_API_KEY}&page=${page}`,
+        { next: { revalidate: 86400 } }
+      );
+      if (!response.ok) {
+        console.error(`TMDB API error: ${response.status} - ${response.statusText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("TMDB getPopularTVShows error:", error);
+      return { results: [], page: 1, total_pages: 1 };
+    }
   },
 
   async getTopRatedTVShows(page = 1) {
@@ -181,11 +217,19 @@ export const tmdbApi = {
 
   async searchTVShows(query: string, page = 1) {
     try {
+      if (!TMDB_API_KEY) {
+        console.error("TMDB API key is missing");
+        return { results: [], page: 1, total_pages: 1 };
+      }
+
       const response = await fetch(
         `${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
         { next: { revalidate: 3600 } }
       );
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        console.error(`TMDB API error: ${response.status} - ${response.statusText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       return await response.json();
     } catch (error) {
       console.error("TMDB searchTVShows error:", error);

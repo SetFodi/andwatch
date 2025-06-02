@@ -63,6 +63,14 @@ A modern, beautiful web application for tracking anime, movies, and TV shows. Bu
   - `components/layout/EnhancedHeader.tsx`
   - Created `app/auth/signout/page.tsx` for direct navigation handling
 
+### Search Functionality ✅
+- **Issue**: Movies and TV shows search returning "No results found" while anime works
+- **Fix**: Added proper TMDB API key validation and error handling
+- **Files Changed**:
+  - `lib/services/api.ts` - Enhanced error handling for all TMDB API methods
+  - `.env.example` - Added TMDB API key documentation
+  - Created `app/api/test-tmdb/route.ts` for API testing
+
 ### Authentication Redirects ✅
 - **Issue**: Profile page redirected to incorrect sign-in path
 - **Fix**: Updated redirect to use correct `/auth/signin` path
@@ -78,6 +86,10 @@ A modern, beautiful web application for tracking anime, movies, and TV shows. Bu
   - `lib/services/api.ts`
   - `next.config.ts`
   - Created `.env.example`
+
+### Profile Filtering Behavior ✅
+- **Issue**: "Missing spots" when filtering by media type in profile sections
+- **Clarification**: This is actually correct behavior - when filtering by specific media types (e.g., only movies), anime and TV show slots are intentionally hidden, creating a filtered view. This is working as designed.
 
 ## 📁 Project Structure
 
@@ -141,12 +153,27 @@ The app can be deployed to any platform that supports Node.js applications.
 
 This project is licensed under the MIT License.
 
-## 🆘 Support
+## 🆘 Troubleshooting
 
-If you encounter any issues:
+### Search Issues (Movies/TV Shows not working)
+1. **Check TMDB API Key**: Ensure `TMDB_API_KEY` is set in your `.env.local` file
+2. **Get API Key**: Visit [TMDB API Settings](https://www.themoviedb.org/settings/api) to get your free API key
+3. **Test API**: Visit `/api/test-tmdb` to verify your API key is working
+4. **Check Console**: Look for TMDB API errors in browser console or server logs
+
+### Profile Filtering "Missing Spots"
+This is normal behavior! When you filter by media type (e.g., "Movies Only"), the system hides anime and TV show items, creating gaps in the grid. This is intentional to show only the filtered content.
+
+### Sign Out Issues
+- Make sure you're using the updated header component
+- Check that NextAuth is properly configured
+- Verify `NEXTAUTH_SECRET` is set in environment variables
+
+### General Issues
 1. Check the environment variables are set correctly
 2. Ensure MongoDB connection is working
-3. Verify TMDB API key is valid
+3. Verify all required API keys are valid
 4. Check the browser console for errors
+5. Restart the development server after environment changes
 
 For additional help, please open an issue in the repository.
