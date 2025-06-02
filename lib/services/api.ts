@@ -8,7 +8,11 @@
 const JIKAN_BASE_URL = "https://api.jikan.moe/v4";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
-const TMDB_API_KEY = process.env.TMDB_API_KEY || "bcea2ce0136ad9c471dd680822fdfdd6"; // Fallback to hardcoded key
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
+
+if (!TMDB_API_KEY) {
+  console.warn("Warning: TMDB_API_KEY is not defined. Movie and TV show features may not work properly.");
+}
 
 // Anime API (Jikan/MyAnimeList)
 export const animeApi = {

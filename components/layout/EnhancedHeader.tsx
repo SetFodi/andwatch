@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import AvatarImage from '@/components/ui/AvatarImage';
@@ -338,12 +338,12 @@ export default function EnhancedHeader() {
                         >
                           Settings
                         </Link>
-                        <Link
-                          href="/auth/signout"
-                          className="block px-4 py-2 text-sm text-red-400 hover:bg-gray-800/50 hover:text-red-300"
+                        <button
+                          onClick={() => signOut({ callbackUrl: '/' })}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800/50 hover:text-red-300"
                         >
                           Sign out
-                        </Link>
+                        </button>
                       </div>
                     </motion.div>
                   )}

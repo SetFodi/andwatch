@@ -8,7 +8,6 @@ const nextConfig = {
   },
   // Performance optimizations
   reactStrictMode: true,
-  swcMinify: true, // Use SWC for minification (faster than Terser)
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production', // Remove console.log in production
   },
@@ -31,12 +30,12 @@ const nextConfig = {
         port: "3000",
         pathname: "/uploads/**",
       },
-      // Add Netlify domain for image serving
-      {
-        protocol: "https",
-        hostname: "your-netlify-app.netlify.app",
-        pathname: "/uploads/**",
-      }
+      // Add your production domain for image serving when deployed
+      // {
+      //   protocol: "https",
+      //   hostname: "your-production-domain.com",
+      //   pathname: "/uploads/**",
+      // }
     ],
     unoptimized: true, // Disable image optimization to fix errors
   },
