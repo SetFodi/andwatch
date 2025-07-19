@@ -187,7 +187,7 @@ export default function CategorySectionClient({
                       className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
                     >
                       {category.loadedItems.map((item, index) => (
-                        item ? <MediaCard key={`${item.id || 'item'}-${index}`} item={item} /> : null
+                        <MediaCard key={`${item.id || 'item'}-${index}`} item={item} />
                       ))}
                     </motion.div>
                   </LazyLoadSection>

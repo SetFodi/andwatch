@@ -37,6 +37,22 @@ async function fetchWithRetry(fetchFn) {
   throw lastError;
 }
 
+// Create placeholder to maintain grid layout
+function createPlaceholder(externalId: string, mediaType: "anime" | "movie" | "tv", userWatchItem?: any) {
+  return {
+    id: externalId,
+    title: mediaType === "anime" ? "Anime" : mediaType === "movie" ? "Movie" : "TV Show",
+    image: null,
+    score: null,
+    type: mediaType,
+    year: null,
+    url: `/${mediaType === "tv" ? "tvshows" : mediaType === "anime" ? "anime" : "movies"}/${externalId}`,
+    userRating: userWatchItem?.userRating || null,
+    status: userWatchItem?.status || null,
+    isPlaceholder: true, // Flag for UI to show placeholder styling
+  };
+}
+
 // Helper functions with userRating and status
 async function getAnimeDetails(externalId: string, userWatchItem?: any) {
   return getOrSetCache(
@@ -45,7 +61,7 @@ async function getAnimeDetails(externalId: string, userWatchItem?: any) {
     async () => {
       try {
         const data = await fetchWithRetry(() => animeApi.getAnimeById(externalId));
-        if (!data || !data.data) return null;
+        if (!data || !data.data) return createPlaceholder(externalId, "anime", userWatchItem);
         return {
           id: data.data.mal_id,
           title: data.data.title,
@@ -66,7 +82,7 @@ async function getAnimeDetails(externalId: string, userWatchItem?: any) {
         };
       } catch (error) {
         console.error(`Error fetching anime ${externalId}:`, error);
-        return null;
+        return createPlaceholder(externalId, "anime", userWatchItem);
       }
     }
   );
@@ -79,7 +95,7 @@ async function getMovieDetails(externalId: string, userWatchItem?: any) {
     async () => {
       try {
         const data = await fetchWithRetry(() => tmdbApi.getMovieById(externalId));
-        if (!data || !data.id) return null;
+        if (!data || !data.id) return createPlaceholder(externalId, "movie", userWatchItem);
         return {
           id: data.id,
           title: data.title,
@@ -98,7 +114,7 @@ async function getMovieDetails(externalId: string, userWatchItem?: any) {
         };
       } catch (error) {
         console.error(`Error fetching movie ${externalId}:`, error);
-        return null;
+        return createPlaceholder(externalId, "movie", userWatchItem);
       }
     }
   );
@@ -111,7 +127,7 @@ async function getTVShowDetails(externalId: string, userWatchItem?: any) {
     async () => {
       try {
         const data = await fetchWithRetry(() => tmdbApi.getTVShowById(externalId));
-        if (!data || !data.id) return null;
+        if (!data || !data.id) return createPlaceholder(externalId, "tv", userWatchItem);
         return {
           id: data.id,
           title: data.name,
@@ -132,7 +148,7 @@ async function getTVShowDetails(externalId: string, userWatchItem?: any) {
         };
       } catch (error) {
         console.error(`Error fetching TV show ${externalId}:`, error);
-        return null;
+        return createPlaceholder(externalId, "tv", userWatchItem);
       }
     }
   );

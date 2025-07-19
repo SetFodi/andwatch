@@ -392,11 +392,10 @@ export default function ServerFilteredProfileClient({
                 key={`${item?.id || index}-${index}`}
                 className="opacity-100" 
               >
-                {item && (
-                  isHistory 
-                    ? <HistoryCard item={item} /> 
-                    : <MediaCard item={item} />
-                )}
+                {isHistory 
+                  ? <HistoryCard item={item} /> 
+                  : <MediaCard item={item} />
+                }
               </div>
             ))}
           </div>

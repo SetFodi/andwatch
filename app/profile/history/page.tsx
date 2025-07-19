@@ -64,6 +64,23 @@ async function fetchWithRetry(fetchFn) {
   throw lastError;
 }
 
+// Create placeholder to maintain grid layout
+function createPlaceholder(item: any) {
+  return {
+    id: item.externalId,
+    title: item.mediaType === "anime" ? "Anime" : item.mediaType === "movie" ? "Movie" : "TV Show",
+    image: null,
+    score: null,
+    type: item.mediaType as "anime" | "movie" | "tv",
+    year: null,
+    url: `/${item.mediaType === "tv" ? "tvshows" : item.mediaType + "s"}/${item.externalId}`,
+    userRating: item.userRating,
+    status: item.status,
+    lastModified: item.updatedAt || item.addedAt,
+    isPlaceholder: true, // Flag for UI to show placeholder styling
+  };
+}
+
 // Item details fetcher
 async function fetchItemDetails(item: any) {
   return getOrSetCache(
@@ -76,7 +93,7 @@ async function fetchItemDetails(item: any) {
         
         if (item.mediaType === "anime") {
           const animeDetails = await fetchWithRetry(() => animeApi.getAnimeById(item.externalId));
-          if (!animeDetails?.data) return null;
+          if (!animeDetails?.data) return createPlaceholder(item);
           
           return {
             id: item.externalId,
@@ -96,7 +113,7 @@ async function fetchItemDetails(item: any) {
           };
         } else if (item.mediaType === "movie") {
           const movieDetails = await fetchWithRetry(() => tmdbApi.getMovieById(item.externalId));
-          if (!movieDetails) return null;
+          if (!movieDetails) return createPlaceholder(item);
           
           return {
             id: item.externalId,
@@ -116,7 +133,7 @@ async function fetchItemDetails(item: any) {
           };
         } else if (item.mediaType === "tv") {
           const tvDetails = await fetchWithRetry(() => tmdbApi.getTVShowById(item.externalId));
-          if (!tvDetails) return null;
+          if (!tvDetails) return createPlaceholder(item);
           
           return {
             id: item.externalId,
@@ -135,10 +152,10 @@ async function fetchItemDetails(item: any) {
             genres: (tvDetails.genres?.map((g: any) => g.name) || []).slice(0, 3),
           };
         }
-        return null;
+        return createPlaceholder(item);
       } catch (error) {
         console.error(`Error fetching ${item.mediaType} ${item.externalId}:`, error);
-        return null;
+        return createPlaceholder(item);
       }
     }
   );
