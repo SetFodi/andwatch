@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import MediaCard from "./MediaCard";
 import EmptyState from "./EmptyState";
 import LazyLoadSection from "@/components/ui/LazyLoadSection";
+import { MediaGridSkeleton } from "@/components/ui/SkeletonLoader";
 
 interface MediaItem {
   id: string | number;
@@ -102,17 +103,7 @@ export default function CategorySectionClient({
 
   // Create a shimmer loading placeholder
   const renderLoadingPlaceholder = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-      {Array.from({ length: 10 }).map((_, index) => (
-        <div key={index} className="bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800/40">
-          <div className="aspect-[3/4] relative bg-gray-800 animate-pulse"></div>
-          <div className="p-4">
-            <div className="h-5 bg-gray-800 rounded animate-pulse mb-2"></div>
-            <div className="h-4 bg-gray-800 rounded animate-pulse w-2/3"></div>
-          </div>
-        </div>
-      ))}
-    </div>
+    <MediaGridSkeleton count={10} />
   );
 
   // If we have a connection error
